@@ -1,0 +1,5 @@
+*.d
+*.o
+netconsd
+modules/*.so
+util/netconsblaster
