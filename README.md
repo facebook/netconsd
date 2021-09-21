@@ -42,7 +42,7 @@ make invocation. All the above targets should build with both clang and gcc.
 ### Setting up the server
 
 By default, netconsd will use 1 listener and 2 worker threads, and listen on
-port 1514 for messages. You can use "-l", "-w", and "-p" respectively to change
+port 1514 for messages. You can use "-l", "-w", and "-u" respectively to change
 the defaults.
 
 There's no universal wisdom about how many threads to use: just experiment with
