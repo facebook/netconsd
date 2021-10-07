@@ -1,5 +1,6 @@
-CC = gcc
-CCC = g++
+CC ?= gcc
+CXX ?= g++
+LDFLAGS ?= -shared -static-libstdc++ -static-libgcc
 
 override CFLAGS += -fPIC
 INCLUDES = -I../ncrx -I../include
@@ -14,11 +15,11 @@ all: $(mods)
 
 %.so: %.c
 	$(CC) $< $(CFLAGS) $(INCLUDES) $(LDFLAGS) -c -o $(<:.c=.o)
-	$(CC) $(<:.c=.o) $(LDFLAGS) -shared -o $@
+	$(CC) $(<:.c=.o) $(LDFLAGS) -o $@
 
 %.so: %.cc
-	$(CCC) $< $(CCFLAGS) $(INCLUDES) $(LDFLAGS) -c -o $(<:.cc=.o)
-	$(CCC) $(<:.cc=.o) $(LDFLAGS) -shared -static-libstdc++ -static-libgcc \
+	$(CXX) $< $(CCFLAGS) $(INCLUDES) $(LDFLAGS) -c -o $(<:.cc=.o)
+	$(CXX) $(<:.cc=.o) $(LDFLAGS) \
 			-o $@
 
 clean:
