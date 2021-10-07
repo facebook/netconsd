@@ -1,0 +1,23 @@
+name: Continuous Integration
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: Build netconsd
+      run: make
+# FIXME disable for now, the markdown docs here need lots of work
+#  markdown:
+#    runs-on: ubuntu-latest
+#    steps:
+#    - name: Checkout repository
+#      uses: actions/checkout@v2
+#    - name: Lint Markdown
+#      uses: actionshub/markdownlint@2.0.2
+#    - name: Check links
+#      uses: gaurav-nelson/github-action-markdown-link-check@1.0.13
