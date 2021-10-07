@@ -12,6 +12,7 @@
 #include <cstring>
 #include <functional>
 #include <unordered_map>
+#include <inttypes.h>
 
 #include <fcntl.h>
 #include <netdb.h>
@@ -118,8 +119,9 @@ static void write_log(struct logtarget& tgt, struct msg_buf *buf,
 	if (!msg)
 		dprintf(tgt.fd, "%s\n", buf->buf);
 	else
-		dprintf(tgt.fd, "%06lu %014lu %d %d %s%s%s%s%s\n", msg->seq,
-			msg->ts_usec, msg->facility, msg->level,
+		dprintf(tgt.fd, "%06" PRIu64 " %014" PRIu64 " %d %d %s%s%s%s%s\n",
+			msg->seq, msg->ts_usec,
+			msg->facility, msg->level,
 			msg->cont_start ? "[CONT START] " : "",
 			msg->cont ? "[CONT] " : "",
 			msg->oos ? "[OOS] ": "",
