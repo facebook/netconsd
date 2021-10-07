@@ -1,8 +1,10 @@
-CC = gcc
+CC ?= gcc
 
-export LDFLAGS = -lpthread -lrt -ldl
-export CFLAGS = -O2 -D_GNU_SOURCE -fno-strict-aliasing -Wall -Wextra \
-	-Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations \
+LDFLAGS ?= -shared
+LIBS = -lpthread -lrt -ldl
+CFLAGS ?= -O2 -fPIC
+CFLAGS += -D_GNU_SOURCE -fno-strict-aliasing -Wall -Wextra \
+  	-Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations \
 	-Wdeclaration-after-statement -Wno-missing-field-initializers \
 	-Wno-unused-parameter
 INCLUDES = -Incrx
@@ -31,7 +33,7 @@ disasm: $(asm)
 -include $(obj:.o=.d)
 
 $(binary): $(lib) $(obj)
-	$(CC) $(LDFLAGS) $(lib) $(obj) -o $@
+	$(CC) $(LDFLAGS) $(LIBS) $(lib) $(obj) -o $@
 
 %.o: %.c
 	$(CC) $< $(CFLAGS) $(INCLUDES) -c -o $@

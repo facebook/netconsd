@@ -1,5 +1,7 @@
 # Netconsd: The Netconsole Daemon
 
+[![Continuous Integration](https://github.com/facebook/netconsd/workflows/Continuous%20Integration/badge.svg?event=push)](https://github.com/facebook/netconsd/actions?query=workflow%3A%22Continuous+Integration%22)
+
 This is a daemon for receiving and processing logs from the Linux Kernel, as
 emitted over a network by the kernel's netconsole module. It supports both the
 old "legacy" text-only format, and the new extended format added in v4.4.

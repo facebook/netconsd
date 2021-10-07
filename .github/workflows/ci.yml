@@ -5,7 +5,18 @@ on:
   pull_request:
 jobs:
   build:
+    name: Build netconsd
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - cc: gcc
+            cxx: g++
+          - cc: clang
+            cxx: clang++
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
