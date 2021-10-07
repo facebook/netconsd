@@ -22,13 +22,15 @@ jobs:
       uses: actions/checkout@v2
     - name: Build netconsd
       run: make
-# FIXME disable for now, the markdown docs here need lots of work
-#  markdown:
-#    runs-on: ubuntu-latest
-#    steps:
-#    - name: Checkout repository
-#      uses: actions/checkout@v2
-#    - name: Lint Markdown
-#      uses: actionshub/markdownlint@2.0.2
-#    - name: Check links
-#      uses: gaurav-nelson/github-action-markdown-link-check@1.0.13
+    - name: Build netconsblaster
+      run: make -C util
+  markdown:
+    name: Markdown
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: Lint Markdown
+      uses: actionshub/markdownlint@2.0.2
+    - name: Check links
+      uses: gaurav-nelson/github-action-markdown-link-check@1.0.13
