@@ -16,25 +16,22 @@ own custom output module.
 ## Building netconsd
 
 The default Makefile target intended for production use has no external
-dependencies besides glibc. To build it, just say "make": you'll end up with a
-single executable in this directory called "netconsd", and a *.so file for every
-module in the modules/ directory.
+dependencies besides glibc. To build it, just say `make`: you'll end up with a
+single executable in this directory called `netconsd`, and a `*.so` file for every
+module in the `modules/` directory.
 
 The Makefile includes a few other handy targets:
 
-    * debug:   Adds the usual debug flags, and also enables the ASAN and
+* `debug`: Adds the usual debug flags, and also enables the ASAN and
            UBSAN sanitizers. You'll need to install libasan/libubsan on
            your system to build this target and run the binaries.
-
-    * 32bit:   Forces 32-bit compilation on x86_64 systems, for easily
+* `32bit`: Forces 32-bit compilation on x86_64 systems, for easily
            testing portability to 32-bit CPU architectures. You'll need
            to install 32-bit libraries if your distro doesn't have them.
+* `debug32`: Union of the "32bit" and "debug" targets.
+* `disasm`: Emits verbose annotated disassembly in *.s files.
 
-    * debug32: Union of the "32bit" and "debug" targets.
-
-    * disasm:  Emits verbose annotated disassembly in *.s files.
-
-If you want to build the daemon with clang, just append 'CC="clang"' to your
+If you want to build the daemon with clang, just append `CC="clang"` to your
 make invocation. All the above targets should build with both clang and gcc.
 
 ## Running netconsd
@@ -54,10 +51,13 @@ being dropped, you need more listeners. The tuning here will obviously depend on
 what your output module does: make sure to pass it when you do your testing.
 
 For the simplest setup, just run:
+
+```
 $ make -s
 $ ./netconsd ./modules/printer.so
+```
 
-Netconsd will always listen on INADDR_ANY and IN6ADDR_ANY. So far there's been
+Netconsd will always listen on `INADDR_ANY` and `IN6ADDR_ANY`. So far there's been
 no reason to make that configurable: if you care, open an issue and we will.
 
 ### Setting up the client
@@ -95,24 +95,30 @@ netconsole, which you almost certainly want. Kernels too old to support extcon
 will silently ignore the "+".
 
 Once you have your parameter constructed, just insert the module with it:
+
+```
 $ sudo modprobe netconsole netconsole=+6666@2401:db00:11:801e:face:0:31:0/eth0,1514@2401:db00:11:d0be:face:0:1b:0/c0:8c:60:3d:0d:bc
+```
 
 You're good to go!
 
 ### Testing on the client
 
-Now that everything is running, you can use /dev/kmsg to write some logs:
+Now that everything is running, you can use `/dev/kmsg` to write some logs:
+
+```
 $ sudo bash -c 'echo "Hello world!" > /dev/kmsg'
 $ sudo bash -c 'echo "<0>OMG!" > /dev/kmsg'
+```
 
-The "<0>" tells the kernel what loglevel to use: 0 is KERN_EMERG, which ensures
+The "<0>" tells the kernel what loglevel to use: 0 is `KERN_EMERG`, which ensures
 your message will actually get transmitted.
 
 ## Writing an output module
 
 ### Interface to netconsd
 
-Output modules are shared object files loaded with dlopen() at runtime by
+Output modules are shared object files loaded with `dlopen()` at runtime by
 netconsd. Netconsd will look for three functions in your module:
 
     1) int netconsd_output_init(int worker_thread_count)
@@ -126,18 +132,18 @@ return non-zero from this function, netconsd will abort() and exit.
 If (3) exists, it is called when netconsd unloads your module.
 
 For every message it receives, netconsd will call (2) in your module. The code
-must be reentrant: netconsd_output_handler() will be called concurrently from
+must be reentrant: `netconsd_output_handler()` will be called concurrently from
 all of the worker threads in netconsd. The "thread" argument tells you which
 worker is invoking the function, which makes it easy to have per-thread data.
 
 Netconsd uses a consistent hash to decide which worker to pass messages to, so
 messages from same remote address will always be queued to the same thread.
 
-The "src" argument will always point to an in6_addr struct containing the source
+The "src" argument will always point to an `in6_addr` struct containing the source
 address of the netconsole packet. If the source was an IPv4 address, it will be
 formatted like "::FFFF:<IPv4 address>" (see "man ipv6" for details).
 
-If the message had extended metadata, "msg" will point to the ncrx_msg struct
+If the message had extended metadata, "msg" will point to the `ncrx_msg` struct
 containing that metadata and "buf" will be NULL. Otherwise, "msg" will be NULL
 and "buf" will point to a msgbuf struct with the raw message text.
 
@@ -160,6 +166,6 @@ See the CONTRIBUTING file for how to help out.
 netconsd is BSD licensed, see the LICENSE file for more information.
 
 netconsd was originally written by Calvin Owens as part of
-[fbkutils](https://github.com/facebook/fbkutils) in 2016, with later
-contibutions by several other people. This repository is a direct continuation
+[fbkutils](https://github.com/facebookarchive/fbkutils) in 2016, with later
+contributions by several other people. This repository is a direct continuation
 of that codebase.
