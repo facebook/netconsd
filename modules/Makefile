@@ -7,7 +7,7 @@ INCLUDES = -I../ncrx -I../include
 
 # Filter out warnings not cpp-applicable that g++ complains about
 CCFLAGS := -std=c++11 $(filter-out -Wstrict-prototypes -Wmissing-prototypes \
-		-Wdeclaration-after-statement,$(CFLAGS))
+                        -Wdeclaration-after-statement,$(CFLAGS))
 
 mods = printer.so logger.so
 
@@ -19,8 +19,7 @@ all: $(mods)
 
 %.so: %.cc
 	$(CXX) $< $(CCFLAGS) $(INCLUDES) $(LDFLAGS) -c -o $(<:.cc=.o)
-	$(CXX) $(<:.cc=.o) $(LDFLAGS) \
-			-o $@
+	$(CXX) $(<:.cc=.o) $(LDFLAGS) -o $@
 
 clean:
 	rm -f *.o *.so
