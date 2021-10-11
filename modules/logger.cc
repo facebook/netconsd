@@ -7,6 +7,7 @@
  * the root directory of this source tree.
  */
 
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
