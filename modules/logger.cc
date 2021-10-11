@@ -53,7 +53,7 @@ template<> struct hash<struct in6_addr>
  * Basic struct to hold the hostname and the FD for its logfile.
  */
 struct logtarget {
-	char hostname[48];
+	char hostname[INET6_ADDRSTRLEN + 1];
 	int fd;
 
 	/*
@@ -70,9 +70,16 @@ struct logtarget {
 
 		memcpy(&sa.sin6_addr, src, sizeof(*src));
 		ret = getnameinfo((const struct sockaddr *)&sa, sizeof(sa),
-				hostname, 48, NULL, 0, NI_NAMEREQD);
-		if (ret)
-			inet_ntop(AF_INET6, src, hostname, sizeof(*src));
+				hostname, sizeof(hostname) - 1, NULL, 0, NI_NAMEREQD);
+		if (ret) {
+			const char *ptr;
+			fprintf(stderr, "getnameinfo failed: %s\n", gai_strerror(ret));
+			ptr = inet_ntop(AF_INET6, src, hostname, INET6_ADDRSTRLEN);
+			if (ptr == NULL) {
+				fprintf(stderr, "inet_ntop failed: %s\n", strerror(errno));
+				snprintf(hostname, 8, "unknown");
+			}
+		}
 
 		ret = open(hostname, O_TRUNC|O_WRONLY|O_CREAT, 0644);
 		if (ret == -1) {
