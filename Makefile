@@ -33,7 +33,7 @@ disasm: $(asm)
 -include $(obj:.o=.d)
 
 $(binary): $(lib) $(obj)
-	$(CC) $(LDFLAGS) $(LIBS) $(lib) $(obj) -o $@
+	$(CC) $(LDFLAGS) $(lib) $(obj) $(LIBS) -o $@
 
 %.o: %.c
 	$(CC) $< $(CFLAGS) $(INCLUDES) -c -o $@
