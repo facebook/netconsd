@@ -33,13 +33,10 @@ do { \
 #error "Sorry, IPv6 address permutation code assumes a little-endian CPU"
 #endif
 
-/*
- * The canonical "fuck it" RNG: just use the low bits of the TSC
- */
 static unsigned long rand64(void)
 {
 	unsigned long ret;
-	asm volatile ("rdtsc" : "=a" (ret) :: "rdx");
+	ret = (unsigned long) rand() << 32 | rand();
 	return ret;
 }
 
@@ -388,6 +385,8 @@ int main(int argc, char **argv)
 	struct sigaction stopper = {
 		.sa_handler = stop_signal,
 	};
+
+	srand(getpid());
 
 	parse_arguments(argc, argv, &params);
 
