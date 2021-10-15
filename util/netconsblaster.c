@@ -375,7 +375,7 @@ static void parse_arguments(int argc, char **argv, struct params *p)
 	}
 }
 
-static void stop_signal(int signum)
+static void stop_signal(__attribute__((__unused__))int signum)
 {
 	params.stop_blasting = 1;
 }
