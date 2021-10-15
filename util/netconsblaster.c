@@ -26,7 +26,7 @@
 #define fatal(...) \
 do { \
 	printf(__VA_ARGS__); \
-	abort(); \
+	exit(EXIT_FAILURE); \
 } while (0)
 
 #if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
