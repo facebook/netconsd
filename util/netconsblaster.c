@@ -147,15 +147,9 @@ static void bump_metadata(struct netcons_metadata *md)
 }
 
 /*
- * Filler text for packets. Wallow in my patriotism.
+ * Filler text for packets.
  */
-static const char *filler = "When, in the course of human events, it becomes "
-	"necessary for one people to dissolve the political bonds which have "
-	"connected them with another, and to assume among the powers of the "
-	"earth, the separate and equal station to which the laws of nature and "
-	"of nature's God entitle them, a decent respect to the opinions of "
-	"mankind requires that they should declare the causes which impel them "
-	"to the separation.";
+static const char *filler = "012345678901234567890123456789012345678901234567890123456789012";
 
 /*
  * Numeric to symbol for the CONT flag
@@ -187,6 +181,7 @@ static void make_packet(struct netcons_packet *pkt, const struct in6_addr *src,
 		const struct in6_addr *dst, const struct netcons_metadata *md)
 {
 	const int len = NETCONSLEN;
+	unsigned int nr;
 
 	memset(pkt, 0, sizeof(pkt->l3) + sizeof(pkt->l4));
 
@@ -197,8 +192,10 @@ static void make_packet(struct netcons_packet *pkt, const struct in6_addr *src,
 	pkt->l3.ip6_plen = htons(sizeof(pkt->l4) + len);
 	pkt->l3.ip6_hlim = 64;
 
-	snprintf(pkt->payload, len - 1, "%d,%lu,%lu,%s;%s", md->lvl, md->seq,
-			md->ts, contflag(md->cont), filler);
+	nr = snprintf(pkt->payload, len - 1, "%d,%lu,%lu,%s;", md->lvl, md->seq,
+			md->ts, contflag(md->cont));
+	if (nr < len)
+		snprintf(pkt->payload + nr, len - nr, "%s", filler);
 	pkt->payload[len - 1] = '\n';
 
 	pkt->l4.source = htons(6666);
