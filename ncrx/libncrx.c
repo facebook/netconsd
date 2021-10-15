@@ -485,8 +485,10 @@ static int queue_oos_msg(struct ncrx_msg *tmsg, struct ncrx *ncrx)
 		/* nope, handle oos overflow and handle */
 		if (ncrx->oos_list.nr > NCRX_OOS_MAX) {
 			msg = msg_list_pop(&ncrx->oos_list);
-			msg->oos = 1;
-			msg_list_append(msg, &ncrx->retired_list);
+			if (msg) {
+				msg->oos = 1;
+				msg_list_append(msg, &ncrx->retired_list);
+			}
 		}
 		return 0;
 	}
