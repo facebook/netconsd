@@ -53,7 +53,7 @@ static void push_prequeue_to_worker(struct ncrx_listener *listener, int worker)
 	prequeue->queue_head = NULL;
 
 	debug("Listener %d pushed %d pkts to worker %d (backlog: %d)\n",
-		listener, prequeue->count, worker, tgt->nr_queued);
+		listener->thread_nr, prequeue->count, worker->thread_nr, tgt->nr_queued);
 
 	tgt->nr_queued += prequeue->count;
 	prequeue->count = 0;
