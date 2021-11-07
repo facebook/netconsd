@@ -30,10 +30,10 @@ do { \
 	exit(EXIT_FAILURE); \
 } while (0)
 
-static uint64_t rand64()
+static uint64_t rand64(unsigned int *seed)
 {
 	uint64_t ret;
-	ret = (uint64_t) rand() << 32 | rand();
+	ret = (uint64_t) rand_r(seed) << 32 | rand_r(seed);
 	return ret;
 }
 
@@ -254,12 +254,13 @@ static uint64_t mask_long(uint64_t val, int bits)
 	return val & mask;
 }
 
-static uint64_t permute_addr(struct in6_addr *addr, int bits)
+static uint64_t permute_addr(struct in6_addr *addr, int bits,
+			     unsigned int *seed)
 {
 	uint64_t *punned;
 
 	punned = (uint64_t *)&addr->s6_addr[16 - sizeof(uint64_t)];
-	*punned ^= mask_long(rand64(), bits);
+	*punned ^= mask_long(rand64(seed), bits);
 	return mask_long(*punned, bits);
 }
 
@@ -269,6 +270,7 @@ struct blaster_state {
 
 	struct in6_addr dst;
 	struct in6_addr src;
+	unsigned int seed;
 	long blastcount;
 	int *stopptr;
 	int bits;
@@ -276,7 +278,7 @@ struct blaster_state {
 
 static void *blaster_thread(void *arg)
 {
-	const struct blaster_state *s = arg;
+	struct blaster_state *s = arg;
 	struct netcons_metadata *mdarr;
 	struct netcons_packet *pkt;
 	struct in6_addr src;
@@ -287,9 +289,10 @@ static void *blaster_thread(void *arg)
 	pkt = alloc_packet();
 	mdarr = alloc_metadata_array(s->bits);
 	memcpy(&src, &s->src, sizeof(src));
+	s->seed = gettid();
 
 	while (!*s->stopptr) {
-		idx = permute_addr(&src, s->bits);
+		idx = permute_addr(&src, s->bits, &s->seed);
 		make_packet(pkt, &src, &s->dst, &mdarr[idx]);
 		bump_metadata(&mdarr[idx]);
 
@@ -407,8 +410,6 @@ int main(int argc, char **argv)
 	struct sigaction stopper = {
 		.sa_handler = stop_signal,
 	};
-
-	srand(getpid());
 
 	parse_arguments(argc, argv, &params);
 
