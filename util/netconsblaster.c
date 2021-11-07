@@ -15,6 +15,7 @@
 #include <signal.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <getopt.h>
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -326,8 +327,20 @@ static void parse_arguments(int argc, char **argv, struct params *p)
 
 	p->stop_blasting = 0;
 
-	while ((i = getopt(argc, argv, "o:s:d:t:n:")) != -1) {
-		switch(i) {
+	static const char *optstr = "o:s:d:t:n:";
+	static const struct option optlong[] = {
+		{
+			.name = "help",
+			.has_arg = no_argument,
+			.val = 'h',
+		},
+		{
+			.name = NULL,
+		},
+	};
+
+	while ((i = getopt_long(argc, argv, optstr, optlong, NULL)) != -1) {
+		switch (i) {
 		case 'o':
 			/*
 			 * Controls the number of bits to randomly flip in the
@@ -366,6 +379,14 @@ static void parse_arguments(int argc, char **argv, struct params *p)
 			 */
 			p->blastcount = atol(optarg);
 			break;
+		case 'h':
+			puts("Usage: netconsblaster [-o srcaddr_bits] [-t thread_order]\n"
+			     "                      [-s srcaddr] [-d dstaddr]\n"
+			     "                      [-n pktcount]\n");
+			puts("  srcaddr_bits: Randomize low N bits of srcaddr");
+			puts("  thread_order: Split work among 2^N threads");
+			puts("  pktcount:     Stop after N pkts per thread\n");
+			exit(0);
 		default:
 			fatal("Invalid command line parameters\n");
 		}
