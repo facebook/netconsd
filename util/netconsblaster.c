@@ -30,10 +30,6 @@ do { \
 	exit(EXIT_FAILURE); \
 } while (0)
 
-#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
-#error "Sorry, IPv6 address permutation code assumes a little-endian CPU"
-#endif
-
 static uint64_t rand64()
 {
 	uint64_t ret;
@@ -250,6 +246,10 @@ static struct netcons_metadata *alloc_metadata_array(int bits)
 static uint64_t mask_long(uint64_t val, int bits)
 {
 	uint64_t mask = (1UL << bits) - 1;
+
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+	mask = __builtin_bswap64(mask);
+#endif
 
 	return val & mask;
 }
