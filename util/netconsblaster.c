@@ -34,14 +34,14 @@ do { \
 #error "Sorry, IPv6 address permutation code assumes a little-endian CPU"
 #endif
 
-static unsigned long rand64(void)
+static uint64_t rand64()
 {
-	unsigned long ret;
-	ret = (unsigned long) rand() << 32 | rand();
+	uint64_t ret;
+	ret = (uint64_t) rand() << 32 | rand();
 	return ret;
 }
 
-static unsigned long now_epoch_ms(void)
+static uint64_t now_epoch_ms(void)
 {
 	struct timespec t;
 
@@ -49,7 +49,7 @@ static unsigned long now_epoch_ms(void)
 	return t.tv_sec * 1000 + t.tv_nsec / 1000000L;
 }
 
-static int ones_complement_sum(unsigned short *data, int len, int sum)
+static int ones_complement_sum(uint16_t *data, int len, int sum)
 {
 	unsigned int tmp;
 	int i;
@@ -71,7 +71,7 @@ static int ones_complement_sum(unsigned short *data, int len, int sum)
 	}
 
 	if (len & 1)
-		fatal("Calvin is lazy\n");
+		fatal("Use test data with even lengths please\n");
 
 	return sum;
 }
@@ -95,8 +95,8 @@ static int ones_complement_sum(unsigned short *data, int len, int sum)
 static int udp_csum(void *addrptr, void *udppkt, int len)
 {
 	unsigned int sum = 0;
-	unsigned short *addrs = addrptr;
-	unsigned short pseudohdr[4] = {0, htons(len), 0, htons(IPPROTO_UDP)};
+	uint16_t *addrs = addrptr;
+	uint16_t pseudohdr[4] = {0, htons(len), 0, htons(IPPROTO_UDP)};
 
 	sum = ones_complement_sum(addrs, 32, 0);
 	sum = ones_complement_sum(pseudohdr, 8, sum);
@@ -247,17 +247,18 @@ static struct netcons_metadata *alloc_metadata_array(int bits)
 	return ret;
 }
 
-static unsigned long mask_long(unsigned long val, int bits)
+static uint64_t mask_long(uint64_t val, int bits)
 {
-	unsigned long mask = (1UL << bits) - 1;
+	uint64_t mask = (1UL << bits) - 1;
+
 	return val & mask;
 }
 
-static unsigned long permute_addr(struct in6_addr *addr, int bits)
+static uint64_t permute_addr(struct in6_addr *addr, int bits)
 {
-	unsigned long *punned;
+	uint64_t *punned;
 
-	punned = (unsigned long *)&addr->s6_addr[16 - sizeof(unsigned long)];
+	punned = (uint64_t *)&addr->s6_addr[16 - sizeof(uint64_t)];
 	*punned ^= mask_long(rand64(), bits);
 	return mask_long(*punned, bits);
 }
@@ -348,7 +349,7 @@ static void parse_arguments(int argc, char **argv, struct params *p)
 			 * will effectively simulate 2^N clients.
 			 */
 			p->srcaddr_order = atoi(optarg);
-			if (p->srcaddr_order > LONG_BIT - 8)
+			if (p->srcaddr_order > 64 - 8)
 				fatal("Source address order too large\n");
 			break;
 		case 't':
@@ -401,7 +402,7 @@ static void stop_signal(__attribute__((__unused__))int signum)
 int main(int argc, char **argv)
 {
 	int i, nr_threads, srcaddr_per_thread;
-	unsigned long tmp, count, start, finish;
+	uint64_t tmp, count, start, finish;
 	struct blaster_state *threadstates, *cur;
 	struct sigaction stopper = {
 		.sa_handler = stop_signal,
