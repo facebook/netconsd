@@ -15,6 +15,7 @@
 #include <signal.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <getopt.h>
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -29,18 +30,14 @@ do { \
 	exit(EXIT_FAILURE); \
 } while (0)
 
-#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
-#error "Sorry, IPv6 address permutation code assumes a little-endian CPU"
-#endif
-
-static unsigned long rand64(void)
+static uint64_t rand64(unsigned int *seed)
 {
-	unsigned long ret;
-	ret = (unsigned long) rand() << 32 | rand();
+	uint64_t ret;
+	ret = (uint64_t) rand_r(seed) << 32 | rand_r(seed);
 	return ret;
 }
 
-static unsigned long now_epoch_ms(void)
+static uint64_t now_epoch_ms(void)
 {
 	struct timespec t;
 
@@ -48,7 +45,7 @@ static unsigned long now_epoch_ms(void)
 	return t.tv_sec * 1000 + t.tv_nsec / 1000000L;
 }
 
-static int ones_complement_sum(unsigned short *data, int len, int sum)
+static int ones_complement_sum(uint16_t *data, int len, int sum)
 {
 	unsigned int tmp;
 	int i;
@@ -70,7 +67,7 @@ static int ones_complement_sum(unsigned short *data, int len, int sum)
 	}
 
 	if (len & 1)
-		fatal("Calvin is lazy\n");
+		fatal("Use test data with even lengths please\n");
 
 	return sum;
 }
@@ -94,8 +91,8 @@ static int ones_complement_sum(unsigned short *data, int len, int sum)
 static int udp_csum(void *addrptr, void *udppkt, int len)
 {
 	unsigned int sum = 0;
-	unsigned short *addrs = addrptr;
-	unsigned short pseudohdr[4] = {0, htons(len), 0, htons(IPPROTO_UDP)};
+	uint16_t *addrs = addrptr;
+	uint16_t pseudohdr[4] = {0, htons(len), 0, htons(IPPROTO_UDP)};
 
 	sum = ones_complement_sum(addrs, 32, 0);
 	sum = ones_complement_sum(pseudohdr, 8, sum);
@@ -246,18 +243,24 @@ static struct netcons_metadata *alloc_metadata_array(int bits)
 	return ret;
 }
 
-static unsigned long mask_long(unsigned long val, int bits)
+static uint64_t mask_long(uint64_t val, int bits)
 {
-	unsigned long mask = (1UL << bits) - 1;
+	uint64_t mask = (1UL << bits) - 1;
+
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+	mask = __builtin_bswap64(mask);
+#endif
+
 	return val & mask;
 }
 
-static unsigned long permute_addr(struct in6_addr *addr, int bits)
+static uint64_t permute_addr(struct in6_addr *addr, int bits,
+			     unsigned int *seed)
 {
-	unsigned long *punned;
+	uint64_t *punned;
 
-	punned = (unsigned long *)&addr->s6_addr[16 - sizeof(unsigned long)];
-	*punned ^= mask_long(rand64(), bits);
+	punned = (uint64_t *)&addr->s6_addr[16 - sizeof(uint64_t)];
+	*punned ^= mask_long(rand64(seed), bits);
 	return mask_long(*punned, bits);
 }
 
@@ -267,6 +270,7 @@ struct blaster_state {
 
 	struct in6_addr dst;
 	struct in6_addr src;
+	unsigned int seed;
 	long blastcount;
 	int *stopptr;
 	int bits;
@@ -274,7 +278,7 @@ struct blaster_state {
 
 static void *blaster_thread(void *arg)
 {
-	const struct blaster_state *s = arg;
+	struct blaster_state *s = arg;
 	struct netcons_metadata *mdarr;
 	struct netcons_packet *pkt;
 	struct in6_addr src;
@@ -285,9 +289,10 @@ static void *blaster_thread(void *arg)
 	pkt = alloc_packet();
 	mdarr = alloc_metadata_array(s->bits);
 	memcpy(&src, &s->src, sizeof(src));
+	s->seed = gettid();
 
 	while (!*s->stopptr) {
-		idx = permute_addr(&src, s->bits);
+		idx = permute_addr(&src, s->bits, &s->seed);
 		make_packet(pkt, &src, &s->dst, &mdarr[idx]);
 		bump_metadata(&mdarr[idx]);
 
@@ -326,8 +331,20 @@ static void parse_arguments(int argc, char **argv, struct params *p)
 
 	p->stop_blasting = 0;
 
-	while ((i = getopt(argc, argv, "o:s:d:t:n:")) != -1) {
-		switch(i) {
+	static const char *optstr = "o:s:d:t:n:";
+	static const struct option optlong[] = {
+		{
+			.name = "help",
+			.has_arg = no_argument,
+			.val = 'h',
+		},
+		{
+			.name = NULL,
+		},
+	};
+
+	while ((i = getopt_long(argc, argv, optstr, optlong, NULL)) != -1) {
+		switch (i) {
 		case 'o':
 			/*
 			 * Controls the number of bits to randomly flip in the
@@ -335,7 +352,7 @@ static void parse_arguments(int argc, char **argv, struct params *p)
 			 * will effectively simulate 2^N clients.
 			 */
 			p->srcaddr_order = atoi(optarg);
-			if (p->srcaddr_order > LONG_BIT - 8)
+			if (p->srcaddr_order > 64 - 8)
 				fatal("Source address order too large\n");
 			break;
 		case 't':
@@ -366,6 +383,14 @@ static void parse_arguments(int argc, char **argv, struct params *p)
 			 */
 			p->blastcount = atol(optarg);
 			break;
+		case 'h':
+			puts("Usage: netconsblaster [-o srcaddr_bits] [-t thread_order]\n"
+			     "                      [-s srcaddr] [-d dstaddr]\n"
+			     "                      [-n pktcount]\n");
+			puts("  srcaddr_bits: Randomize low N bits of srcaddr");
+			puts("  thread_order: Split work among 2^N threads");
+			puts("  pktcount:     Stop after N pkts per thread\n");
+			exit(0);
 		default:
 			fatal("Invalid command line parameters\n");
 		}
@@ -380,13 +405,11 @@ static void stop_signal(__attribute__((__unused__))int signum)
 int main(int argc, char **argv)
 {
 	int i, nr_threads, srcaddr_per_thread;
-	unsigned long tmp, count, start, finish;
+	uint64_t tmp, count, start, finish;
 	struct blaster_state *threadstates, *cur;
 	struct sigaction stopper = {
 		.sa_handler = stop_signal,
 	};
-
-	srand(getpid());
 
 	parse_arguments(argc, argv, &params);
 

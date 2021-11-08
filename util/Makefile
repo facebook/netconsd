@@ -7,3 +7,6 @@ all: netconsblaster
 
 netconsblaster:
 	$(CC) $(CFLAGS) $(LDFLAGS) netconsblaster.c $(LIBS) -o netconsblaster
+
+clean:
+	rm -f netconsblaster
