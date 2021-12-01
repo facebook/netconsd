@@ -19,6 +19,7 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/syscall.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/ip6.h>
@@ -289,7 +290,7 @@ static void *blaster_thread(void *arg)
 	pkt = alloc_packet();
 	mdarr = alloc_metadata_array(s->bits);
 	memcpy(&src, &s->src, sizeof(src));
-	s->seed = gettid();
+	s->seed = syscall(SYS_gettid);
 
 	while (!*s->stopptr) {
 		idx = permute_addr(&src, s->bits, &s->seed);
