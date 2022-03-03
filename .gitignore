@@ -3,3 +3,6 @@
 netconsd
 modules/*.so
 util/netconsblaster
+/netconsd-*.tar.gz
+/netconsd-*.src.rpm
+/netconsd.spec
