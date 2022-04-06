@@ -173,7 +173,7 @@ static const char *contflag(int cont)
 }
 
 static void make_packet(struct netcons_packet *pkt, const struct in6_addr *src,
-		const struct in6_addr *dst, const struct netcons_metadata *md)
+		const struct in6_addr *dst, const int16_t *dst_port, const struct netcons_metadata *md)
 {
 	const int len = NETCONSLEN;
 	unsigned int nr;
@@ -194,7 +194,7 @@ static void make_packet(struct netcons_packet *pkt, const struct in6_addr *src,
 	pkt->payload[len - 1] = '\n';
 
 	pkt->l4.source = htons(6666);
-	pkt->l4.dest = htons(1514);
+	pkt->l4.dest = htons(*dst_port);
 	pkt->l4.len = htons(sizeof(pkt->l4) + len);
 	pkt->l4.check = htons(udp_csum(&pkt->l3.ip6_src, &pkt->l4,
 			sizeof(pkt->l4) + len));
@@ -271,6 +271,7 @@ struct blaster_state {
 
 	struct in6_addr dst;
 	struct in6_addr src;
+	int16_t dst_port;
 	unsigned int seed;
 	long blastcount;
 	int *stopptr;
@@ -279,7 +280,7 @@ struct blaster_state {
 
 static void *blaster_thread(void *arg)
 {
-	struct blaster_state *s = arg;
+	struct blaster_state *_blaster_state = arg;
 	struct netcons_metadata *mdarr;
 	struct netcons_packet *pkt;
 	struct in6_addr src;
@@ -288,19 +289,19 @@ static void *blaster_thread(void *arg)
 
 	fd = get_raw_socket();
 	pkt = alloc_packet();
-	mdarr = alloc_metadata_array(s->bits);
-	memcpy(&src, &s->src, sizeof(src));
-	s->seed = syscall(SYS_gettid);
+	mdarr = alloc_metadata_array(_blaster_state->bits);
+	memcpy(&src, &_blaster_state->src, sizeof(src));
+	_blaster_state->seed = syscall(SYS_gettid);
 
-	while (!*s->stopptr) {
-		idx = permute_addr(&src, s->bits, &s->seed);
-		make_packet(pkt, &src, &s->dst, &mdarr[idx]);
+	while (!*_blaster_state->stopptr) {
+		idx = permute_addr(&src, _blaster_state->bits, &_blaster_state->seed);
+		make_packet(pkt, &src, &_blaster_state->dst, &_blaster_state->dst_port, &mdarr[idx]);
 		bump_metadata(&mdarr[idx]);
 
 		if (!write_packet(fd, pkt))
 			count++;
 
-		if (s->blastcount && count == s->blastcount)
+		if (_blaster_state->blastcount && count == _blaster_state->blastcount)
 			break;
 	}
 
@@ -312,6 +313,7 @@ static struct params {
 	int thread_order;
 	struct in6_addr src;
 	struct in6_addr dst;
+	int16_t dst_port;
 	long blastcount;
 
 	int stop_blasting;
@@ -326,13 +328,14 @@ static void parse_arguments(int argc, char **argv, struct params *p)
 	 */
 	p->srcaddr_order = 16;
 	p->thread_order = 0;
+	p->dst_port = 1514;
 	memcpy(&p->src, &in6addr_loopback, sizeof(in6addr_loopback));
 	memcpy(&p->dst, &in6addr_loopback, sizeof(in6addr_loopback));
 	p->blastcount = 0;
 
 	p->stop_blasting = 0;
 
-	static const char *optstr = "o:s:d:t:n:";
+	static const char *optstr = "o:s:d:t:n:p:";
 	static const struct option optlong[] = {
 		{
 			.name = "help",
@@ -384,13 +387,20 @@ static void parse_arguments(int argc, char **argv, struct params *p)
 			 */
 			p->blastcount = atol(optarg);
 			break;
+		case 'p':
+			/*
+			 * Set the destination UDP port for outgoing packets.
+			 */
+			 p->dst_port = atoi(optarg);
+			 break;
 		case 'h':
 			puts("Usage: netconsblaster [-o srcaddr_bits] [-t thread_order]\n"
 			     "                      [-s srcaddr] [-d dstaddr]\n"
-			     "                      [-n pktcount]\n");
+			     "                      [-n pktcount] [-p dst_port]\n");
 			puts("  srcaddr_bits: Randomize low N bits of srcaddr");
 			puts("  thread_order: Split work among 2^N threads");
 			puts("  pktcount:     Stop after N pkts per thread\n");
+			puts("  dst_port:     The UDP destination port\n");
 			exit(0);
 		default:
 			fatal("Invalid command line parameters\n");
@@ -407,7 +417,7 @@ int main(int argc, char **argv)
 {
 	int i, nr_threads, srcaddr_per_thread;
 	uint64_t tmp, count, start, finish;
-	struct blaster_state *threadstates, *cur;
+	struct blaster_state *threadstates, *threadstate;
 	struct sigaction stopper = {
 		.sa_handler = stop_signal,
 	};
@@ -427,18 +437,19 @@ int main(int argc, char **argv)
 	sigaction(SIGINT, &stopper, NULL);
 
 	for (i = 0; i < nr_threads; i++) {
-		cur = &threadstates[i];
+		threadstate = &threadstates[i];
 
-		memcpy(&cur->src, &params.src, sizeof(cur->src));
-		memcpy(&cur->dst, &params.dst, sizeof(cur->dst));
-		cur->blastcount = params.blastcount;
-		cur->stopptr = &params.stop_blasting;
-		cur->bits = srcaddr_per_thread;
+		memcpy(&threadstate->src, &params.src, sizeof(threadstate->src));
+		memcpy(&threadstate->dst, &params.dst, sizeof(threadstate->dst));
+		memcpy(&threadstate->dst_port, &params.dst_port, sizeof(threadstate->dst_port));
+		threadstate->blastcount = params.blastcount;
+		threadstate->stopptr = &params.stop_blasting;
+		threadstate->bits = srcaddr_per_thread;
 
-		cur->src.s6_addr[15] = (unsigned char)i;
-		cur->nr = i;
+		threadstate->src.s6_addr[15] = (unsigned char)i;
+		threadstate->nr = i;
 
-		if (pthread_create(&cur->id, NULL, blaster_thread, cur))
+		if (pthread_create(&threadstate->id, NULL, blaster_thread, threadstate))
 			fatal("Thread %d/%d failed: %m\n", i, nr_threads);
 	}
 
