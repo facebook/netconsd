@@ -77,7 +77,7 @@ def make_ext_header(seq, facility, level, cont):
     """
 
     faclev = (facility.value << 3) | level.value
-    ts_usec = int(time.monotonic() * (10 ** 6))
+    ts_usec = int(time.monotonic() * (10**6))
     return "{},{},{},{};".format(faclev, seq, ts_usec, "c" if cont else "-")
 
 
