@@ -9,8 +9,8 @@ files_to_sync:
 upstream_package_name: netconsd
 downstream_package_name: netconsd
 actions:
-  # Fetch the specfile from Rawhide and drop any patches
-  post-upstream-clone: "bash -c \"curl -s https://src.fedoraproject.org/rpms/netconsd/raw/main/f/netconsd.spec | sed '/^Patch[0-9]/d' > netconsd.spec\""
+  # Fetch the specfile from Rawhide, drop any patches and disable rpmautospec
+  post-upstream-clone: "bash -c \"curl -s https://src.fedoraproject.org/rpms/netconsd/raw/main/f/netconsd.spec | sed -e '/^Patch[0-9]/d' -e '/^%autochangelog$/d' > netconsd.spec\""
 
 jobs:
 - job: copr_build
