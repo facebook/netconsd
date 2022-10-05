@@ -166,6 +166,9 @@ build with `-static-libstdc++` and/or `-static-libgcc` to make this work.
 
 See the code and Makefile in `modules/` for some examples of the above.
 
+Chek out `rust/` if you are looking for an example of a netconsd module
+written in Rust.
+
 ## Contributing
 
 See the CONTRIBUTING file for how to help out.
