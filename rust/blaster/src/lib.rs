@@ -32,7 +32,9 @@ pub struct WorkerConfig {
     pub id: u8,
     pub packets_count: u64,
     pub dst_port: u16,
-    pub sleep_time_nano: Option<u64>,
+    pub sleep_duration: Option<Duration>,
+    pub extended_msg: bool,
+    pub sender_addr_rnd_bytes: usize,
 }
 
 #[repr(C, packed)]
@@ -183,14 +185,20 @@ pub fn blast_worker(config: WorkerConfig) {
     packet.l3.src[15] = config.id as u8;
 
     for i in 0u64..config.packets_count {
-        let msg = format!("{},{},{},-;hello packet {} {}\n", 4, i, i, config.id, i);
+        let msg = if config.extended_msg {
+            format!("{},{},{},-;hello packet {} {}\n", 4, i, i, config.id, i)
+        } else {
+            format!("[{}] hello packet {} {}\n", i, config.id, i)
+        };
         packet.set_payload(&msg);
-        packet.l3.src[1] = rand::random();
+        for j in 0..config.sender_addr_rnd_bytes {
+            packet.l3.src[j] = rand::random();
+        }
         packet.update_checksum();
 
         send_packet(fd, &packet, &addr);
-        if let Some(t) = config.sleep_time_nano {
-            sleep(Duration::from_nanos(t));
+        if let Some(t) = config.sleep_duration {
+            sleep(t);
         }
     }
 }

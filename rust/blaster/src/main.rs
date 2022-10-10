@@ -28,6 +28,9 @@ struct CliArgs {
 
     #[clap(short, long)]
     sleep_time_nano: Option<u64>,
+
+    #[clap(short = 'r', long, default_value_t = 0)]
+    sender_ip_rnd_bytes: usize,
 }
 
 fn format_duration(duration: &Duration) -> String {
@@ -41,14 +44,16 @@ fn main() {
     let args = CliArgs::parse();
 
     let mut workers: Vec<thread::JoinHandle<()>> = Vec::new();
-
+    let sleep_duration = args.sleep_time_nano.map(Duration::from_nanos);
     let start_time = Instant::now();
     for i in 0..args.threads {
         let config = WorkerConfig {
             id: i as u8,
             packets_count: args.packets,
             dst_port: args.port,
-            sleep_time_nano: args.sleep_time_nano,
+            sleep_duration,
+            extended_msg: true,
+            sender_addr_rnd_bytes: args.sender_ip_rnd_bytes,
         };
         workers.push(thread::spawn(move || {
             blast_worker(config);
