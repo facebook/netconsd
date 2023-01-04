@@ -322,6 +322,17 @@ static struct params {
 static void parse_arguments(int argc, char **argv, struct params *p)
 {
 	int i;
+	const char *optstr = "o:s:d:t:n:p:";
+	const struct option optlong[] = {
+		{
+			.name = "help",
+			.has_arg = no_argument,
+			.val = 'h',
+		},
+		{
+			.name = NULL,
+		},
+	};
 
 	/*
 	 * Defaults
@@ -334,18 +345,6 @@ static void parse_arguments(int argc, char **argv, struct params *p)
 	p->blastcount = 0;
 
 	p->stop_blasting = 0;
-
-	static const char *optstr = "o:s:d:t:n:p:";
-	static const struct option optlong[] = {
-		{
-			.name = "help",
-			.has_arg = no_argument,
-			.val = 'h',
-		},
-		{
-			.name = NULL,
-		},
-	};
 
 	while ((i = getopt_long(argc, argv, optstr, optlong, NULL)) != -1) {
 		switch (i) {
