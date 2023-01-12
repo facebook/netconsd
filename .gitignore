@@ -6,3 +6,6 @@ util/netconsblaster
 /netconsd-*.tar.gz
 /netconsd-*.src.rpm
 /netconsd.spec
+Cargo.lock
+/target
+libnetconsd.a

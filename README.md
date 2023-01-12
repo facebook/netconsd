@@ -36,6 +36,12 @@ The Makefile includes a few other handy targets:
 If you want to build the daemon with clang, just append `CC="clang"` to your
 make invocation. All the above targets should build with both clang and gcc.
 
+### Rust
+
+An executable can also be built using `cargo build`. The Rust main function has
+not been production-tested and it's intended to be used as an experiment, or to
+facilitate an incremental conversion of C code to Rust.
+
 ## Running netconsd
 
 ### Setting up the server
