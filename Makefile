@@ -20,10 +20,13 @@ disasm: CFLAGS += -fverbose-asm
 
 binary = netconsd
 lib = ncrx/libncrx.o
+liball = libnetconsd.a
 obj = threads.o listener.o worker.o output.o main.o
+rlibobj = threads.o listener.o worker.o output.o
 asm = $(obj:.o=.s)
 
 all: $(binary) mods
+rlib: $(liball)
 32bit: $(binary) mods
 
 debug: all
@@ -34,6 +37,9 @@ disasm: $(asm)
 
 $(binary): $(lib) $(obj)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(lib) $(obj) $(LIBS) -o $@
+
+$(liball): $(rlibobj) $(lib)
+	ar rc $@ $(rlibobj) $(lib)
 
 %.o: %.c
 	$(CC) $< $(CFLAGS) $(INCLUDES) -c -o $@
@@ -56,3 +62,4 @@ clean:
 	rm -f modules/*.o modules/*.so
 	rm -f ncrx/*.o ncrx/*.d
 	rm -f util/netconsblaster
+	rm -f libnetconsd.a
