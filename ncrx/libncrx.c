@@ -257,6 +257,7 @@ static int parse_packet(const char *payload, struct ncrx_msg *msg)
 				goto einval;
 			if (!msg->text_len ||
 			    nf_len >= NCRX_LINE_MAX ||
+			    nf_off >= nf_len ||
 			    nf_off + msg->text_len > nf_len)
 				goto einval;
 
