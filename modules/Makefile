@@ -1,9 +1,10 @@
 CC ?= gcc
 CXX ?= g++
-LDFLAGS ?= -shared -static-libstdc++ -static-libgcc
+LDFLAGS ?=
 
 override CFLAGS += -fPIC
 override CXXFLAGS += -std=c++11 -fPIC
+override LDFLAGS += -shared -static-libstdc++ -static-libgcc
 INCLUDES = -I../ncrx -I../include
 
 mods = printer.so logger.so
