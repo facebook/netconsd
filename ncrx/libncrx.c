@@ -189,6 +189,27 @@ static struct ncrx_msg *msg_list_pop(struct ncrx_msg_list *list)
 }
 
 /*
+ * Check if we have a kernel version in the very first field
+ */
+static int release_prepended(char *ptr)
+{
+	char *dot_pos, *comma_pos;
+
+	if (!ptr)
+		return 0;
+
+	dot_pos = strchr(ptr, '.');
+	comma_pos = strchr(ptr, ',');
+
+	if (!dot_pos || !comma_pos)
+		return 0;
+
+	if (dot_pos < comma_pos)
+		return 1;
+
+	return 0;
+}
+/*
  * Parse @payload into @msg.  The data is not copied into @msg's buffer.
  * @msg->text and ->dict are updated to point into @payload instead.
  */
@@ -211,34 +232,43 @@ static int parse_packet(const char *payload, struct ncrx_msg *msg)
 	if (msg->text_len > NCRX_LINE_MAX)
 		msg->text_len = NCRX_LINE_MAX;
 
-	/* <level>,<sequnum>,<timestamp>,<contflag>[,KEY=VAL]* */
-	idx = 0;
+	/* [release,]<level>,<sequnum>,<timestamp>,<contflag>[,KEY=VAL]* */
 	p = buf;
+	if (release_prepended(p)) {
+		idx = 0;
+	} else {
+		idx = 1;
+	}
 	while ((tok = strsep(&p, ","))) {
 		char *endp, *key, *val;
 		unsigned long long v;
 
 		switch (idx++) {
 		case 0:
+			if (!tok)
+				goto einval;
+			strncpy(msg->version, tok, NCRX_KVERSION_MAX_LEN - 1);
+			continue;
+		case 1:
 			v = strtoul(tok, &endp, 0);
 			if (*endp != '\0' || v > UINT8_MAX)
 				goto einval;
 			msg->facility = v >> 3;
 			msg->level = v & ((1 << 3) - 1);
 			continue;
-		case 1:
+		case 2:
 			v = strtoull(tok, &endp, 0);
 			if (*endp != '\0')
 				goto einval;
 			msg->seq = v;
 			continue;
-		case 2:
+		case 3:
 			v = strtoull(tok, &endp, 0);
 			if (*endp != '\0')
 				goto einval;
 			msg->ts_usec = v;
 			continue;
-		case 3:
+		case 4:
 			if (tok[0] == 'c')
 				msg->cont_start = 1;
 			else if (tok[0] == '+')
