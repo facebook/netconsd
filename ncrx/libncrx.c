@@ -537,6 +537,8 @@ static int ncrx_queue_payload(const char *payload, struct ncrx *ncrx,
 	struct ncrx_slot *slot;
 	int new_msg = 0;
 
+	memset(&tmsg, 0, sizeof(struct ncrx_msg));
+
 	if (parse_packet(payload, &tmsg))
 		return -1;
 
