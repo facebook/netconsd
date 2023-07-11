@@ -38,8 +38,8 @@ void netconsd_output_handler(int t, struct in6_addr *src, struct msg_buf *buf,
 	if (!msg)
 		printf("%40s: %s\n", addr, buf->buf);
 	else
-		printf("%40s: S%06" PRIu64 " T%014" PRIu64 " F%d/L%d %s%s%s%s%s\n", addr,
-			msg->seq, msg->ts_usec, msg->facility, msg->level,
+		printf("%40s: %s S%06" PRIu64 " T%014" PRIu64 " F%d/L%d %s%s%s%s%s\n", addr,
+			msg->version, msg->seq, msg->ts_usec, msg->facility, msg->level,
 			msg->cont_start ? "[CONT START] " : "",
 			msg->cont ? "[CONT] " : "",
 			msg->oos ? "[OOS] ": "",
