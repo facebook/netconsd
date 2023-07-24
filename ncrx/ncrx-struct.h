@@ -14,6 +14,8 @@ struct ncrx_list {
 	struct ncrx_list	*prev;
 };
 
+#define NCRX_KVERSION_MAX_LEN		32
+
 /*
  * ncrx_msg represents a single log message and what gets returned from
  * ncrx_next_msg().  Most of the public fields are self-explanatory except
@@ -53,6 +55,8 @@ struct ncrx_msg {
 	int			ncfrag_len;	/* netconsole frag len */
 	int			ncfrag_left;	/* number of missing bytes */
 
+	/* kernel release version */
+	char			version[NCRX_KVERSION_MAX_LEN];
 	unsigned		emg:1;		/* emergency transmission */
 
 	char			buf[];
