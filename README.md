@@ -73,7 +73,7 @@ no reason to make that configurable: if you care, open an issue and we will.
 The netconsole module takes a parameter like this:
 
 ```
-netconsole=${sport}@${saddr}/${intf},${dport}@${daddr}/${dmac}
+netconsole=[+][r]${sport}@${saddr}/${intf},${dport}@${daddr}/${dmac}
 ```
 
 The fields are as follows:
@@ -99,7 +99,7 @@ use the following quick shell one-liners to easily get the MAC of the router:
 Here are a couple examples for the parameter above:
 
 ```
-IPv6: netconsole=+6666@2401:db00:11:801e:face:0:31:0/eth0,1514@2401:db00:11:d0be:face:0:1b:0/c0:8c:60:3d:0d:bc
+IPv6: netconsole=+r6666@2401:db00:11:801e:face:0:31:0/eth0,1514@2401:db00:11:d0be:face:0:1b:0/c0:8c:60:3d:0d:bc
 IPv4: netconsole=6666@192.168.0.22/eth0,1514@192.168.0.1/00:00:0c:9f:f1:90
 ```
 
@@ -107,10 +107,14 @@ Prepending `+` to the cmdline will cause kernels that support it to use extended
 netconsole, which you almost certainly want. Kernels too old to support extcon
 will silently ignore the `+`.
 
+Adding the `r` to the command line will cause netcons to emit the kernel
+release version in the first field of the extended message. For that, you need
+to have extended log (extcon) enabled.
+
 Once you have your parameter constructed, just insert the module with it:
 
 ```
-$ sudo modprobe netconsole netconsole=+6666@2401:db00:11:801e:face:0:31:0/eth0,1514@2401:db00:11:d0be:face:0:1b:0/c0:8c:60:3d:0d:bc
+$ sudo modprobe netconsole netconsole=+r6666@2401:db00:11:801e:face:0:31:0/eth0,1514@2401:db00:11:d0be:face:0:1b:0/c0:8c:60:3d:0d:bc
 ```
 
 You're good to go!
@@ -172,7 +176,7 @@ build with `-static-libstdc++` and/or `-static-libgcc` to make this work.
 
 See the code and Makefile in `modules/` for some examples of the above.
 
-Chek out `rust/` if you are looking for an example of a netconsd module
+Check out `rust/` if you are looking for an example of a netconsd module
 written in Rust.
 
 ## Contributing
