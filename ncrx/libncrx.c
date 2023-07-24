@@ -533,7 +533,7 @@ static int queue_oos_msg(struct ncrx_msg *tmsg, struct ncrx *ncrx)
 static int ncrx_queue_payload(const char *payload, struct ncrx *ncrx,
 		uint64_t now_real)
 {
-	struct ncrx_msg tmsg;
+	struct ncrx_msg tmsg = {};
 	struct ncrx_slot *slot;
 	int new_msg = 0;
 
