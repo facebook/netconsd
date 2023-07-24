@@ -127,8 +127,8 @@ static void write_log(struct logtarget& tgt, struct msg_buf *buf,
 	if (!msg)
 		dprintf(tgt.fd, "%s\n", buf->buf);
 	else
-		dprintf(tgt.fd, "%06" PRIu64 " %014" PRIu64 " %d %d %s%s%s%s%s\n",
-			msg->seq, msg->ts_usec,
+		dprintf(tgt.fd, "%s %06" PRIu64 " %014" PRIu64 " %d %d %s%s%s%s%s\n",
+			msg->version, msg->seq, msg->ts_usec,
 			msg->facility, msg->level,
 			msg->cont_start ? "[CONT START] " : "",
 			msg->cont ? "[CONT] " : "",
