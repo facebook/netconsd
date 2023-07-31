@@ -14,7 +14,7 @@ struct ncrx_list {
 	struct ncrx_list	*prev;
 };
 
-#define NCRX_KVERSION_MAX_LEN		32
+#define NCRX_KVERSION_MAX_LEN		64
 
 /*
  * ncrx_msg represents a single log message and what gets returned from
