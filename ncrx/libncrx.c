@@ -599,6 +599,16 @@ static int ncrx_queue_payload(const char *payload, struct ncrx *ncrx,
 		int off = tmsg.ncfrag_off;
 		int i;
 
+		/*
+		 * we're merging a text fragment into the message text buffer.
+		 * the checks done here ensure that the received fragment values
+		 * are within bounds of the message text buffer.
+		 */
+		if (off >= msg->text_len ||
+			off + tmsg.ncfrag_len > msg->text_len) {
+			return -1;
+		}
+
 		for (i = 0; i < tmsg.ncfrag_len; i++) {
 			if (msg->text[off + i])
 				continue;
