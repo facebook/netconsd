@@ -826,8 +826,10 @@ struct ncrx *ncrx_create(const struct ncrx_param *param)
 	init_list(&ncrx->retired_list.head);
 
 	ncrx->slots = calloc(ncrx->p.nr_slots, sizeof(ncrx->slots[0]));
-	if (!ncrx->slots)
+	if (!ncrx->slots) {
+		free(ncrx);
 		return NULL;
+	}
 
 	for (i = 0; i < ncrx->p.nr_slots; i++)
 		init_list(&ncrx->slots[i].hole_node);
