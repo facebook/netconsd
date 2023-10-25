@@ -8,6 +8,7 @@
  * the root directory of this source tree.
  */
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -218,6 +219,7 @@ static int parse_packet(const char *payload, struct ncrx_msg *msg)
 	char buf[1024];
 	char *p, *tok;
 	int idx;
+	bool is_frag_seen = false, is_emg_seen = false;
 
 	memset(msg, 0, sizeof(*msg));
 
@@ -283,6 +285,8 @@ static int parse_packet(const char *payload, struct ncrx_msg *msg)
 		if (!strcmp(key, "ncfrag")) {
 			unsigned nf_off, nf_len;
 
+			if (is_frag_seen)
+				goto einval;
 			if (sscanf(val, "%u/%u", &nf_off, &nf_len) != 2)
 				goto einval;
 			if (!msg->text_len ||
@@ -295,11 +299,16 @@ static int parse_packet(const char *payload, struct ncrx_msg *msg)
 			msg->ncfrag_len = msg->text_len;
 			msg->ncfrag_left = nf_len - msg->ncfrag_len;
 			msg->text_len = nf_len;
+			is_frag_seen = true;
 		} else if (!strcmp(key, "ncemg")) {
+			if (is_emg_seen)
+				goto einval;
+
 			v = strtoul(val, &endp, 0);
 			if (*endp != '\0')
 				goto einval;
 			msg->emg = v;
+			is_emg_seen = true;
 		}
 	}
 	return 0;
