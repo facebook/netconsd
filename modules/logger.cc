@@ -124,17 +124,28 @@ static struct logtarget& get_target(int thread_nr, struct in6_addr *src)
 static void write_log(struct logtarget& tgt, struct msg_buf *buf,
 		struct ncrx_msg *msg)
 {
-	if (!msg)
+	/* legacy non-extended netcons message */
+	if (!msg) {
 		dprintf(tgt.fd, "%s\n", buf->buf);
-	else
-		dprintf(tgt.fd, "%s %06" PRIu64 " %014" PRIu64 " %d %d %s%s%s%s%s\n",
-			msg->version, msg->seq, msg->ts_usec,
-			msg->facility, msg->level,
-			msg->cont_start ? "[CONT START] " : "",
-			msg->cont ? "[CONT] " : "",
-			msg->oos ? "[OOS] ": "",
-			msg->seq_reset ? "[SEQ RESET] " : "",
-			msg->text);
+		return;
+	}
+
+	/* extended netcons msg with metadata */
+	if (std::strlen(msg->version) > 1)
+		 dprintf(tgt.fd, "%s ", msg->version);
+	dprintf(tgt.fd, "%06" PRIu64 " ", msg->seq);
+	dprintf(tgt.fd, "%014" PRIu64 " ", msg->ts_usec);
+	dprintf(tgt.fd, "%d ", msg->facility);
+	dprintf(tgt.fd, "%d ", msg->level);
+	if (msg->cont_start)
+		 dprintf(tgt.fd, "[CONT START] ");
+	if (msg->cont)
+		 dprintf(tgt.fd, "[CONT] ");
+	if (msg->oos)
+		 dprintf(tgt.fd, "[OOS] ");
+	if (msg->seq_reset)
+		 dprintf(tgt.fd, "[SEQ RESET] ");
+	dprintf(tgt.fd, "%s\n", msg->text);
 }
 
 extern "C" int netconsd_output_init(int nr)
