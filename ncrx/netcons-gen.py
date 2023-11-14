@@ -127,7 +127,7 @@ def parse_args():
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+def main() -> None:
     args = parse_args()
 
     enabled_modes = [Mode.NORMAL]
@@ -166,3 +166,7 @@ if __name__ == "__main__":
         seq = new_seq
 
         time.sleep(0.5)
+
+
+if __name__ == "__main__":
+    main()  # pragma: no cover
