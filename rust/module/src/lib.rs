@@ -20,7 +20,6 @@ use libc::iovec;
 pub use libc::sockaddr_in6;
 
 #[repr(C)]
-#[derive(Debug)]
 pub struct MsgBuf {
     pub next: *const MsgBuf,
     pub iovec: iovec,
@@ -29,6 +28,17 @@ pub struct MsgBuf {
     pub rcv_time: u64,
     pub rcv_flags: c_int,
     pub rcv_bytes: c_int,
+}
+
+impl fmt::Debug for MsgBuf {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("MsgBuf")
+            .field("src", &std::net::Ipv6Addr::from(self.src.sin6_addr.s6_addr))
+            .field("rcv_time", &self.rcv_time)
+            .field("rcv_flags", &self.rcv_flags)
+            .field("rcv_bytes", &self.rcv_bytes)
+            .finish()
+    }
 }
 
 #[derive(Debug)]
