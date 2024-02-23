@@ -182,7 +182,7 @@ pub fn blast_worker(config: WorkerConfig) {
     let addr = make_sockaddr_in6(dst_ip);
 
     let mut packet = NetconsPacket::new(dst_ip, config.dst_port);
-    packet.l3.src[15] = config.id as u8;
+    packet.l3.src[15] = config.id;
 
     for i in 0u64..config.packets_count {
         let msg = if config.extended_msg {
