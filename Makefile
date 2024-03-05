@@ -6,6 +6,7 @@ CFLAGS += -D_GNU_SOURCE -fno-strict-aliasing -Wall -Wextra \
           -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations \
           -Wdeclaration-after-statement -Wno-missing-field-initializers \
           -Wno-unused-parameter
+CPPFLAGS ?=
 INCLUDES = -Incrx
 
 debug debug32: CFLAGS += -O0 -gdwarf-4 -fno-omit-frame-pointer \
@@ -36,17 +37,17 @@ disasm: $(asm)
 -include $(obj:.o=.d)
 
 $(binary): $(lib) $(obj)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(lib) $(obj) $(LIBS) -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(lib) $(obj) $(LIBS) -o $@
 
 $(liball): $(rlibobj) $(lib)
 	ar rc $@ $(rlibobj) $(lib)
 
 %.o: %.c
-	$(CC) $< $(CFLAGS) $(INCLUDES) -c -o $@
+	$(CC) $< $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c -o $@
 	$(CC) -MM $< $(INCLUDES) > $(@:.o=.d)
 
 %.s: %.c
-	$(CC) $< $(CFLAGS) $(INCLUDES) -c -S -o $@
+	$(CC) $< $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c -S -o $@
 
 $(lib):
 	$(MAKE) -e -C ncrx
