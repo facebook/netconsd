@@ -2,11 +2,10 @@
  * These structs have been generated with bindgen (except for the bitfields getters),
  * and are passed to netconsd_output_handler function defined in a netconsd module.
  *
- * Copyright (C) 2022, Meta, Inc.
- * All rights reserved.
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 
 use std::ffi::CStr;

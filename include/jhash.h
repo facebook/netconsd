@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016, Facebook, Inc.
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
  * Lifted from 4.4 Linux kernel source. Alterations for netconsd:
  *	- Pulled in rol32() from linux/bitops.h
