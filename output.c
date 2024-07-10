@@ -5,13 +5,10 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
-#include <pthread.h>
 #include <dlfcn.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
 
 #include <ncrx.h>

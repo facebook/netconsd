@@ -8,15 +8,12 @@
  */
 
 #include <stdlib.h>
-#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <getopt.h>
-#include <sys/wait.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/syscall.h>
 #include <arpa/inet.h>

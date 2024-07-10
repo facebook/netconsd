@@ -7,14 +7,12 @@
 
 #include <stdlib.h>
 #include <signal.h>
-#include <dlfcn.h>
 #include <arpa/inet.h>
 #include <getopt.h>
 
 #include "include/common.h"
 #include "include/output.h"
 #include "include/threads.h"
-#include "include/listener.h"
 
 static void parse_arguments(int argc, char **argv, struct netconsd_params *p)
 {

@@ -7,12 +7,8 @@
 
 #include <stdlib.h>
 #include <stdint.h>
-#include <inttypes.h>
-#include <unistd.h>
 #include <errno.h>
-#include <signal.h>
 #include <string.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 
 #include "include/common.h"

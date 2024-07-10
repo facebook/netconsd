@@ -11,7 +11,6 @@
 #include <pthread.h>
 #include <string.h>
 #include <limits.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
 
 #include <ncrx.h>
