@@ -1,6 +1,6 @@
 CC ?= gcc
 
-LIBS = -lpthread -lrt -ldl
+LIBS = -lpthread
 CFLAGS ?= -O2 -fPIC
 CFLAGS += -D_GNU_SOURCE -fno-strict-aliasing -Wall -Wextra \
           -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations \
@@ -8,6 +8,11 @@ CFLAGS += -D_GNU_SOURCE -fno-strict-aliasing -Wall -Wextra \
           -Wno-unused-parameter
 CPPFLAGS ?=
 INCLUDES = -Incrx
+
+UNAME := $(shell uname)
+ifneq ($(UNAME), OpenBSD)
+LIBS += -lrt -ldl
+endif
 
 debug debug32: CFLAGS += -O0 -gdwarf-4 -fno-omit-frame-pointer \
 	                 -fstack-protector-all -fsanitize=address \
