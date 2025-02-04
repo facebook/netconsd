@@ -14,12 +14,19 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <inttypes.h>
+#include <sys/wait.h>
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/syscall.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/ip6.h>
 #include <netinet/udp.h>
+
+#ifndef __linux__
+#error Sorry, SOCK_RAW is not portable
+#endif
 
 #define fatal(...) \
 do { \
@@ -183,17 +190,17 @@ static void make_packet(struct netcons_packet *pkt, const struct in6_addr *src,
 	pkt->l3.ip6_plen = htons(sizeof(pkt->l4) + len);
 	pkt->l3.ip6_hlim = 64;
 
-	nr = snprintf(pkt->payload, len - 1, "%d,%lu,%lu,%s;", md->lvl, md->seq,
-			md->ts, contflag(md->cont));
+	nr = snprintf(pkt->payload, len - 1, "%d,%" PRIu64 ",%" PRIu64 ",%s;",
+		      md->lvl, md->seq, md->ts, contflag(md->cont));
 	if (nr < len)
 		snprintf(pkt->payload + nr, len - nr, "%s", filler);
 	pkt->payload[len - 1] = '\n';
 
-	pkt->l4.source = htons(6666);
-	pkt->l4.dest = htons(*dst_port);
-	pkt->l4.len = htons(sizeof(pkt->l4) + len);
-	pkt->l4.check = htons(udp_csum(&pkt->l3.ip6_src, &pkt->l4,
-			sizeof(pkt->l4) + len));
+	pkt->l4.uh_sport = htons(6666);
+	pkt->l4.uh_dport = htons(*dst_port);
+	pkt->l4.uh_ulen = htons(sizeof(pkt->l4) + len);
+	pkt->l4.uh_sum = htons(udp_csum(&pkt->l3.ip6_src, &pkt->l4,
+			 sizeof(pkt->l4) + len));
 }
 
 static int write_packet(int sockfd, struct netcons_packet *pkt)
@@ -204,7 +211,8 @@ static int write_packet(int sockfd, struct netcons_packet *pkt)
 	};
 
 	memcpy(&bogus.sin6_addr, &pkt->l3.ip6_dst, sizeof(pkt->l3.ip6_dst));
-	return sendto(sockfd, pkt, len, 0, &bogus, sizeof(bogus)) != len;
+	return sendto(sockfd, pkt, len, 0, (const struct sockaddr *)&bogus,
+		      sizeof(bogus)) != len;
 }
 
 static int get_raw_socket(void)
@@ -457,7 +465,7 @@ int main(int argc, char **argv)
 	}
 	finish = now_epoch_ms();
 
-	printf("Wrote %lu packets (%lu pkts/sec)\n", count,
+	printf("Wrote %" PRIu64 " packets (%" PRIu64 " pkts/sec)\n", count,
 			count / (finish - start) * 1000UL);
 	return 0;
 }

@@ -9,6 +9,7 @@
 #define __LISTENER_H__
 
 #include "threads.h"
+#include <pthread.h>
 
 #define RCVBUF_SIZE	1024
 

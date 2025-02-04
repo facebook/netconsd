@@ -18,6 +18,7 @@
 #include "include/output.h"
 
 static void *output_dlhandles[MAXOUTS];
+static const char *output_dlpaths[MAXOUTS];
 static void (*outputs[MAXOUTS])(int, struct in6_addr *, struct msg_buf *,
 		struct ncrx_msg *);
 static int nr_outputs;
@@ -59,6 +60,7 @@ int register_output_module(char *path, int nr_workers)
 
 	log("Module '%s' registered (#%d@%p)\n", path, nr_outputs, dlsym_addr);
 	output_dlhandles[nr_outputs] = dl;
+	output_dlpaths[nr_outputs] = strdup(path);
 	outputs[nr_outputs] = dlsym_addr;
 	nr_outputs++;
 	return 0;
@@ -72,11 +74,9 @@ void destroy_output_modules(void)
 {
 	int i, ret;
 	void (*mod_exit)(void);
-	char path[PATH_MAX] = {0};
 
 	for (i = 0; i < nr_outputs; i++) {
-		if (dlinfo(output_dlhandles[i], RTLD_DI_ORIGIN, path))
-			strncpy(path, dlerror(), PATH_MAX - 1);
+		const char *path = output_dlpaths[i];
 
 		mod_exit = dlsym(output_dlhandles[i], "netconsd_output_exit");
 		if (mod_exit) {
@@ -88,6 +88,8 @@ void destroy_output_modules(void)
 		ret = dlclose(output_dlhandles[i]);
 		if (ret)
 			warn("dlclose() failed: %s\n", dlerror());
+
+		free((void *)path);
 	}
 }
 

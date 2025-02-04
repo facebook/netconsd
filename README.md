@@ -18,9 +18,9 @@ own custom output module.
 ## Building netconsd
 
 The default Makefile target intended for production use has no external
-dependencies besides glibc. To build it, just say `make`: you'll end up with a
-single executable in this directory called `netconsd`, and a `*.so` file for every
-module in the `modules/` directory.
+dependencies besides glibc. To build it, just say `make` (or `gmake` on BSD):
+you'll end up with a single executable in this directory called `netconsd`, and
+a `*.so` file for every module in the `modules/` directory.
 
 The Makefile includes a few other handy targets:
 

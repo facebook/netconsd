@@ -124,7 +124,7 @@ static int get_listen_socket(struct sockaddr_in6 *bindaddr)
 	if (ret == -1)
 		fatal("Couldn't set SO_REUSEPORT on socket: %m\n");
 
-	ret = bind(fd, bindaddr, sizeof(*bindaddr));
+	ret = bind(fd, (const struct sockaddr *)bindaddr, sizeof(*bindaddr));
 	if (ret == -1)
 		fatal("Couldn't bind: %m\n");
 
