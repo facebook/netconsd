@@ -15,8 +15,6 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <inttypes.h>
-#include <sys/wait.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/syscall.h>
 #include <arpa/inet.h>
