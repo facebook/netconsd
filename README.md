@@ -59,8 +59,12 @@ $ make -s
 $ ./netconsd ./modules/printer.so
 ```
 
-Netconsd will always listen on `INADDR_ANY` and `IN6ADDR_ANY`. So far there's been
-no reason to make that configurable: if you care, open an issue and we will.
+Netconsd will listen on `INADDR_ANY` and `IN6ADDR_ANY`, unless you pass a
+specific IPv4 or IPv6 address to listen on using the `-a` argument.
+
+Note that some systems (at least, OpenBSD) do not allow dual stack sockets at
+all, so as currently written netconsd is only capable of receiving IPv6
+netconsole packets on those systems.
 
 ### Setting up the client
 
@@ -180,5 +184,5 @@ netconsd is BSD licensed, see the LICENSE file for more information.
 
 netconsd was originally written by Calvin Owens as part of
 [fbkutils](https://github.com/facebookarchive/fbkutils) in 2016, with later
-contributions by several other people. This repository is a direct continuation
-of that codebase.
+contributions by several other people. The ncrx library was originally written
+by Tejun Heo. This repository is a direct continuation of that codebase.
