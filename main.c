@@ -44,8 +44,13 @@ static void parse_arguments(int argc, char **argv, struct netconsd_params *p)
 			p->mmsg_batch = atoi(optarg);
 			break;
 		case 'a':
-			if (!inet_pton(AF_INET6, optarg, &p->listen_addr.sin6_addr))
-				fatal("invalid listen address\n");
+			if (!inet_pton(AF_INET6, optarg, &p->listen_addr.sin6_addr)) {
+				char v4[sizeof("::ffff:XXX.XXX.XXX.XXX")];
+				snprintf(v4, sizeof(v4), "::ffff:%s", optarg);
+				if (!inet_pton(AF_INET6, v4, &p->listen_addr.sin6_addr))
+					fatal("invalid listen address\n");
+			}
+
 			debug("listening for address %s\n", optarg);
 			break;
 		case 'u':
