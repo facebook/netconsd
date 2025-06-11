@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <errno.h>
 
-#define LOGPFX "[fb-netconsd] "
+#define LOGPFX "[netconsd] "
 
 #define S(x) #x
 #define S_(x) S(x)
