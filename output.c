@@ -7,7 +7,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <limits.h>
 #include <dlfcn.h>
 #include <netinet/in.h>
 
