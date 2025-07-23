@@ -58,8 +58,9 @@ static int ones_complement_sum(uint16_t *data, int len, int sum)
 		/*
 		 * Kill -0
 		 */
-		if (tmp == 65535)
+		if (tmp == 65535) {
 			tmp = 0;
+}
 
 		sum += tmp;
 		if (sum >= 65536) {
@@ -68,8 +69,9 @@ static int ones_complement_sum(uint16_t *data, int len, int sum)
 		}
 	}
 
-	if (len & 1)
+	if (len & 1) {
 		fatal("Use test data with even lengths please\n");
+}
 
 	return sum;
 }
@@ -106,8 +108,9 @@ static int udp_csum(void *addrptr, void *udppkt, int len)
 	 * all ones. An all zero transmitted checksum value means that the
 	 * transmitter generated no checksum"
 	 */
-	if (sum == 0)
+	if (sum == 0) {
 		sum = 65535;
+}
 
 	return sum;
 }
@@ -190,8 +193,9 @@ static void make_packet(struct netcons_packet *pkt, const struct in6_addr *src,
 
 	nr = snprintf(pkt->payload, len - 1, "%d,%" PRIu64 ",%" PRIu64 ",%s;",
 		      md->lvl, md->seq, md->ts, contflag(md->cont));
-	if (nr < len)
+	if (nr < len) {
 		snprintf(pkt->payload + nr, len - nr, "%s", filler);
+}
 	pkt->payload[len - 1] = '\n';
 
 	pkt->l4.uh_sport = htons(6666);
@@ -218,8 +222,9 @@ static int get_raw_socket(void)
 	int fd;
 
 	fd = socket(AF_INET6, SOCK_RAW, IPPROTO_RAW);
-	if (fd == -1)
+	if (fd == -1) {
 		fatal("Couldn't get raw socket: %m\n");
+}
 
 	return fd;
 }
@@ -229,8 +234,9 @@ static struct netcons_packet *alloc_packet(void)
 	struct netcons_packet *ret;
 
 	ret = malloc(sizeof(struct netcons_packet) + NETCONSLEN);
-	if (!ret)
+	if (!ret) {
 		fatal("ENOMEM allocating packet\n");
+}
 
 	return ret;
 }
@@ -240,8 +246,9 @@ static struct netcons_metadata *alloc_metadata_array(int bits)
 	struct netcons_metadata *ret;
 
 	ret = calloc(1 << bits, sizeof(*ret));
-	if (!ret)
+	if (!ret) {
 		fatal("ENOMEM allocating metadata\n");
+}
 
 	return ret;
 }
@@ -300,11 +307,13 @@ static void *blaster_thread(void *arg)
 		make_packet(pkt, &src, &_blaster_state->dst, &_blaster_state->dst_port, &mdarr[idx]);
 		bump_metadata(&mdarr[idx]);
 
-		if (!write_packet(fd, pkt))
+		if (!write_packet(fd, pkt)) {
 			count++;
+}
 
-		if (_blaster_state->blastcount && count == _blaster_state->blastcount)
+		if (_blaster_state->blastcount && count == _blaster_state->blastcount) {
 			break;
+}
 	}
 
 	return (void*)count;
@@ -357,30 +366,34 @@ static void parse_arguments(int argc, char **argv, struct params *p)
 			 * will effectively simulate 2^N clients.
 			 */
 			p->srcaddr_order = atoi(optarg);
-			if (p->srcaddr_order > 64 - 8)
+			if (p->srcaddr_order > 64 - 8) {
 				fatal("Source address order too large\n");
+}
 			break;
 		case 't':
 			/*
 			 * Split the work among 2^N worker threads.
 			 */
 			p->thread_order = atoi(optarg);
-			if (p->thread_order > 8)
+			if (p->thread_order > 8) {
 				fatal("Largest supported thread order is 8\n");
+}
 			break;
 		case 's':
 			/*
 			 * Source address to permute the low N bits of.
 			 */
-			if (inet_pton(AF_INET6, optarg, &p->src) != 1)
+			if (inet_pton(AF_INET6, optarg, &p->src) != 1) {
 				fatal("Bad src '%s': %m\n", optarg);
+}
 			break;
 		case 'd':
 			/*
 			 * Destination address for all generated packets.
 			 */
-			if (inet_pton(AF_INET6, optarg, &p->dst) != 1)
+			if (inet_pton(AF_INET6, optarg, &p->dst) != 1) {
 				fatal("Bad dst '%s': %m\n", optarg);
+}
 			break;
 		case 'n':
 			/*
@@ -428,12 +441,14 @@ int main(int argc, char **argv)
 	nr_threads = 1 << params.thread_order;
 	srcaddr_per_thread = params.srcaddr_order - params.thread_order;
 
-	if (srcaddr_per_thread <= 0)
+	if (srcaddr_per_thread <= 0) {
 		fatal("More thread bits than srcaddr bits\n");
+}
 
 	threadstates = calloc(nr_threads, sizeof(*threadstates));
-	if (!threadstates)
+	if (!threadstates) {
 		fatal("ENOMEM allocating state for threads\n");
+}
 
 	sigaction(SIGINT, &stopper, NULL);
 
@@ -450,8 +465,9 @@ int main(int argc, char **argv)
 		threadstate->src.s6_addr[15] = (unsigned char)i;
 		threadstate->nr = i;
 
-		if (pthread_create(&threadstate->id, NULL, blaster_thread, threadstate))
+		if (pthread_create(&threadstate->id, NULL, blaster_thread, threadstate)) {
 			fatal("Thread %d/%d failed: %m\n", i, nr_threads);
+}
 	}
 
 	count = 0;

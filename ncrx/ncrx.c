@@ -76,8 +76,9 @@ int main(int argc, char **argv)
 		timeout = -1;
 		if (next_at != UINT64_MAX) {
 			timeout = 0;
-			if (next_at > now)
+			if (next_at > now) {
 				timeout = next_at - now;
+}
 		}
 
 		if (poll(&pfd, 1, timeout) < 0) {
@@ -108,8 +109,9 @@ int main(int argc, char **argv)
 		/* process the payload and perform rx operations */
 		if (ncrx_process(payload, now, 0, ncrx) && errno != ENOENT) {
 			if (errno == EINVAL) {
-				while (len && isspace(payload[len - 1]))
+				while (len && isspace(payload[len - 1])) {
 					payload[--len] = '\0';
+}
 				printf("[%12s] %s\n", "INVAL", payload);
 			} else {
 				perror("ncrx_process");
@@ -118,8 +120,9 @@ int main(int argc, char **argv)
 
 		resp = ncrx_response(ncrx, &len);
 		if (resp && sendto(fd, resp, len, 0,
-				   (struct sockaddr *)&raddr, raddr_len) < 0)
+				   (struct sockaddr *)&raddr, raddr_len) < 0) {
 			perror("sendto");
+}
 
 		while ((msg = ncrx_next_msg(ncrx))) {
 			const char *pnl = prev_cont ? "\n" : "";
@@ -141,16 +144,18 @@ int main(int argc, char **argv)
 
 			next_seq = msg->seq + 1;
 
-			if (!msg->cont || !prev_cont)
+			if (!msg->cont || !prev_cont) {
 				printf("%s[%5"PRIu64".%06"PRIu64"] ", pnl,
 				       msg->ts_usec / 1000000,
 				       msg->ts_usec % 1000000);
+}
 
 			printf("%s", msg->text);
 
 			prev_cont = msg->cont_start || msg->cont;
-			if (!prev_cont)
+			if (!prev_cont) {
 				printf("\n");
+}
 		}
 
 		next_at = ncrx_invoke_process_at(ncrx);

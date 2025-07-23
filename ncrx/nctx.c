@@ -68,8 +68,9 @@ static int kmsg_ring_init(struct kmsg_ring *ring, int nr_slots)
 	memset(ring, 0, sizeof(*ring));
 
 	ring->slots = malloc(sizeof(ring->slots[0]) * nr_slots);
-	if (!ring->slots)
+	if (!ring->slots) {
 		return -1;
+}
 
 	ring->nr_slots = nr_slots;
 	return 0;
@@ -111,8 +112,9 @@ next_line:
 	} while (len < 0 && errno == EPIPE);
 
 	if (len < 0) {
-		if (errno == EAGAIN)
+		if (errno == EAGAIN) {
 			return 0;
+}
 		return -1;
 	}
 
@@ -125,13 +127,15 @@ next_line:
 	}
 
 	/* wind ring till head is at the right slot and store */
-	while (ring->head_seq < seq)
+	while (ring->head_seq < seq) {
 		kmsg_ring_advance(ring);
+}
 
 	slot = &ring->slots[ring->head];
 	slot->msg = strdup(buf);
-	if (!slot->msg)
+	if (!slot->msg) {
 		return -1;
+}
 
 	slot->ts = current_msec();
 	kmsg_ring_advance(ring);
@@ -144,8 +148,9 @@ static uint64_t kmsg_ring_tail_seq(struct kmsg_ring *ring)
 	int nr;
 
 	nr = ring->head - ring->tail;
-	if (nr < 0)
+	if (nr < 0) {
 		nr += ring->nr_slots;
+}
 	return ring->head_seq - nr;
 }
 
@@ -154,12 +159,14 @@ static char *kmsg_ring_peek(struct kmsg_ring *ring, uint64_t seq)
 {
 	int idx;
 
-	if (seq < kmsg_ring_tail_seq(ring) || seq >= ring->head_seq)
+	if (seq < kmsg_ring_tail_seq(ring) || seq >= ring->head_seq) {
 		return NULL;
+}
 
 	idx = ring->head - (int)(ring->head_seq - seq);
-	if (idx < 0)
+	if (idx < 0) {
 		idx += ring->nr_slots;
+}
 
 	return ring->slots[idx].msg;
 }
@@ -170,11 +177,13 @@ static void kmsg_ring_consume(struct kmsg_ring *ring, uint64_t upto_seq)
 	uint64_t tail_seq = kmsg_ring_tail_seq(ring);
 	int tail = ring->tail;
 
-	if (!ring->head_seq || upto_seq < tail_seq)
+	if (!ring->head_seq || upto_seq < tail_seq) {
 		return;
+}
 
-	if (upto_seq >= ring->head_seq)
+	if (upto_seq >= ring->head_seq) {
 		upto_seq = ring->head_seq - 1;
+}
 
 	while (tail_seq <= upto_seq) {
 		struct kmsg_slot *slot = &ring->slots[ring->head];
@@ -244,21 +253,25 @@ static void send_kmsg(int sock, char *msg, int is_emg_tx,
 		int this_chunk;
 
 		this_chunk = body_len - offset;
-		if (this_chunk > chunk_len)
+		if (this_chunk > chunk_len) {
 			this_chunk = chunk_len;
+}
 
-		if (is_emg_tx && this_header < sizeof(buf))
+		if (is_emg_tx && this_header < sizeof(buf)) {
 			this_header += snprintf(buf + this_header,
 						sizeof(buf) - this_header,
 						",ncemg=1");
-		if (nr_chunks > 1 && this_header < sizeof(buf))
+}
+		if (nr_chunks > 1 && this_header < sizeof(buf)) {
 			this_header += snprintf(buf + this_header,
 						sizeof(buf) - this_header,
 						",ncfrag=%d/%d",
 						offset, body_len);
-		if (this_header < sizeof(buf))
+}
+		if (this_header < sizeof(buf)) {
 			this_header += snprintf(buf + this_header,
 						sizeof(buf) - this_header, ";");
+}
 
 		if (this_header + chunk_len > NCRX_PKT_MAX) {
 			fprintf(stderr, "Error: this_header %d is too large for chunk_len %d in send_kmsg()\n",
@@ -290,8 +303,9 @@ next_packet:
 	msgh.msg_namelen = sizeof(raddr);
 	len = recvmsg(sock, &msgh, MSG_DONTWAIT);
 	if (len < 0) {
-		if (errno == EAGAIN)
+		if (errno == EAGAIN) {
 			return 0;
+}
 		return -1;
 	}
 
@@ -303,12 +317,13 @@ next_packet:
 	if (strncmp(tok, "ncrx", 4)) {
 		char addr_str[INET6_ADDRSTRLEN];
 
-		if (raddr.addr.sa_family == AF_INET6)
+		if (raddr.addr.sa_family == AF_INET6) {
 			inet_ntop(AF_INET6, &raddr.in6.sin6_addr,
 				  addr_str, sizeof(addr_str));
-		else
+		} else {
 			inet_ntop(AF_INET, &raddr.in4.sin_addr,
 				  addr_str, sizeof(addr_str));
+}
 
 		fprintf(stderr, "Warning: malformed packet from [%s]:%u\n",
 			addr_str, ntohs(raddr.in4.sin_port));
@@ -317,16 +332,18 @@ next_packet:
 	tok += 4;
 
 	/* <ack-seq> */
-	if (sscanf(tok, "%"SCNu64, &seq))
+	if (sscanf(tok, "%"SCNu64, &seq)) {
 		kmsg_ring_consume(ring, seq);
+}
 
 	/* <missing-seq>... */
 	while ((tok = strsep(&pos, " "))) {
 		if (sscanf(tok, "%"SCNu64, &seq)) {
 			char *msg = kmsg_ring_peek(ring, seq);
-			if (msg)
+			if (msg) {
 				send_kmsg(sock, msg, 0,
 					  &raddr.addr, msgh.msg_namelen);
+}
 		}
 	}
 
@@ -356,15 +373,17 @@ static int kmsg_ring_emg_tx(struct kmsg_ring *ring, int sock)
 	}
 
 	/* calculate the next deadline, if in the future, return the diff */
-	if (!ring->emg_tx_intv)
+	if (!ring->emg_tx_intv) {
 		target = slot->ts + ACK_TIMEOUT;
-	else
+	} else {
 		target = ring->emg_tx_ts + ring->emg_tx_intv;
+}
 
 	now = current_msec();
 
-	if (target > now)
+	if (target > now) {
 		return target - now;
+}
 
 	tail_seq = kmsg_ring_tail_seq(ring);
 
@@ -375,19 +394,22 @@ static int kmsg_ring_emg_tx(struct kmsg_ring *ring, int sock)
 	} else if (ring->emg_tx_seq < ring->head_seq) {
 		/* in the middle of emg tx session */
 		ring->emg_tx_seq++;
-		if (ring->emg_tx_seq < tail_seq)
+		if (ring->emg_tx_seq < tail_seq) {
 			ring->emg_tx_seq = tail_seq;
+}
 	} else {
 		/* finished one session, increase intv and repeat */
 		ring->emg_tx_intv *= 2;
-		if (ring->emg_tx_intv < EMG_TX_MAX_INTV)
+		if (ring->emg_tx_intv < EMG_TX_MAX_INTV) {
 			ring->emg_tx_intv = EMG_TX_MAX_INTV;
+}
 		ring->emg_tx_seq = tail_seq;
 	}
 
 	msg = kmsg_ring_peek(ring, ring->emg_tx_seq);
-	if (msg)
+	if (msg) {
 		send_kmsg(sock, msg, 1, &ring->raddr.addr, ring->raddr_len);
+}
 
 	ring->emg_tx_ts = now;
 
@@ -396,8 +418,9 @@ static int kmsg_ring_emg_tx(struct kmsg_ring *ring, int sock)
 
 static void usage_err(const char *err)
 {
-	if (err)
+	if (err) {
 		fprintf(stderr, "Error: %s\n", err);
+}
 	fprintf(stderr, "Usage: nctx [-n nr_slots] [-k devkmsg_path] ip port\n");
 	exit(1);
 }
@@ -417,8 +440,9 @@ int main(int argc, char **argv)
 		switch (opt) {
 		case 'n':
 			nr_slots = atoi(optarg);
-			if (nr_slots <= 0)
+			if (nr_slots <= 0) {
 				usage_err("nr_slots must be a positive number");
+}
 			break;
 		case 'k':
 			devkmsg_path = optarg;
@@ -428,8 +452,9 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (optind + 2 != argc)
+	if (optind + 2 != argc) {
 		usage_err(NULL);
+}
 
 	if (inet_pton(AF_INET6, argv[optind], &laddr.in6.sin6_addr)) {
 		laddr.addr.sa_family = AF_INET6;
@@ -442,8 +467,9 @@ int main(int argc, char **argv)
 	}
 
 	port = atoi(argv[optind + 1]);
-	if (port <= 0 || port > 65535)
+	if (port <= 0 || port > 65535) {
 		usage_err("invalid port number");
+}
 
 	laddr.in4.sin_port = htons(port);
 

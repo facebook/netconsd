@@ -155,9 +155,10 @@ static void msg_list_del(struct ncrx_msg *msg, struct ncrx_msg_list *list)
 	list_del(&msg->node);
 	list->nr--;
 
-	if (!list->nr)
+	if (!list->nr) {
 		assert(list->head.next == &list->head &&
 		       list->head.prev == &list->head);
+}
 }
 
 static void msg_list_append(struct ncrx_msg *msg, struct ncrx_msg_list *list)
@@ -168,8 +169,9 @@ static void msg_list_append(struct ncrx_msg *msg, struct ncrx_msg_list *list)
 
 static struct ncrx_msg *msg_list_peek(struct ncrx_msg_list *list)
 {
-	if (list_empty(&list->head))
+	if (list_empty(&list->head)) {
 		return NULL;
+}
 	return node_to_msg(list->head.next);
 }
 
@@ -178,8 +180,9 @@ static struct ncrx_msg *msg_list_pop(struct ncrx_msg_list *list)
 	struct ncrx_msg *msg;
 
 	msg = msg_list_peek(list);
-	if (msg)
+	if (msg) {
 		msg_list_del(msg, list);
+}
 	return msg;
 }
 
@@ -190,17 +193,20 @@ static int release_prepended(char *ptr)
 {
 	char *dot_pos, *comma_pos;
 
-	if (!ptr)
+	if (!ptr) {
 		return 0;
+}
 
 	dot_pos = memchr(ptr, '.', NCRX_KVERSION_MAX_LEN);
 	comma_pos = memchr(ptr, ',', NCRX_KVERSION_MAX_LEN);
 
-	if (!dot_pos || !comma_pos)
+	if (!dot_pos || !comma_pos) {
 		return 0;
+}
 
-	if (dot_pos < comma_pos)
+	if (dot_pos < comma_pos) {
 		return 1;
+}
 
 	return 0;
 }
@@ -218,15 +224,17 @@ static int parse_packet(const char *payload, struct ncrx_msg *msg)
 	memset(msg, 0, sizeof(*msg));
 
 	p = strchr(payload, ';');
-	if (!p || p - payload >= (signed)sizeof(buf))
+	if (!p || p - payload >= (signed)sizeof(buf)) {
 		goto einval;
+}
 	memcpy(buf, payload, p - payload);
 	buf[p - payload] = '\0';
 
 	msg->text = p + 1;
 	msg->text_len = strlen(msg->text);
-	if (msg->text_len > NCRX_LINE_MAX)
+	if (msg->text_len > NCRX_LINE_MAX) {
 		msg->text_len = NCRX_LINE_MAX;
+}
 
 	/* [release,]<level>,<sequnum>,<timestamp>,<contflag>[,KEY=VAL]* */
 	p = buf;
@@ -241,53 +249,62 @@ static int parse_packet(const char *payload, struct ncrx_msg *msg)
 
 		switch (idx++) {
 		case 0:
-			if (!tok)
+			if (!tok) {
 				goto einval;
+}
 			strncpy(msg->version, tok, NCRX_KVERSION_MAX_LEN - 1);
 			continue;
 		case 1:
 			v = strtoul(tok, &endp, 0);
-			if (*endp != '\0' || v > UINT8_MAX)
+			if (*endp != '\0' || v > UINT8_MAX) {
 				goto einval;
+}
 			msg->facility = v >> 3;
 			msg->level = v & ((1 << 3) - 1);
 			continue;
 		case 2:
 			v = strtoull(tok, &endp, 0);
-			if (*endp != '\0')
+			if (*endp != '\0') {
 				goto einval;
+}
 			msg->seq = v;
 			continue;
 		case 3:
 			v = strtoull(tok, &endp, 0);
-			if (*endp != '\0')
+			if (*endp != '\0') {
 				goto einval;
+}
 			msg->ts_usec = v;
 			continue;
 		case 4:
-			if (tok[0] == 'c')
+			if (tok[0] == 'c') {
 				msg->cont_start = 1;
-			else if (tok[0] == '+')
+			} else if (tok[0] == '+') {
 				msg->cont = 1;
+}
 			continue;
 		}
 
 		val = tok;
 		key = strsep(&val, "=");
-		if (!val)
+		if (!val) {
 			continue;
+}
 		if (!strcmp(key, "ncfrag")) {
 			unsigned nf_off, nf_len;
 
-			if (is_frag_seen)
+			if (is_frag_seen) {
 				goto einval;
-			if (sscanf(val, "%u/%u", &nf_off, &nf_len) != 2)
+}
+			if (sscanf(val, "%u/%u", &nf_off, &nf_len) != 2) {
 				goto einval;
+}
 			if (!msg->text_len ||
 			    nf_len >= NCRX_LINE_MAX ||
 			    nf_off >= nf_len ||
-			    nf_off + msg->text_len > nf_len)
+			    nf_off + msg->text_len > nf_len) {
 				goto einval;
+}
 
 			msg->ncfrag_off = nf_off;
 			msg->ncfrag_len = msg->text_len;
@@ -295,12 +312,14 @@ static int parse_packet(const char *payload, struct ncrx_msg *msg)
 			msg->text_len = nf_len;
 			is_frag_seen = true;
 		} else if (!strcmp(key, "ncemg")) {
-			if (is_emg_seen)
+			if (is_emg_seen) {
 				goto einval;
+}
 
 			v = strtoul(val, &endp, 0);
-			if (*endp != '\0')
+			if (*endp != '\0') {
 				goto einval;
+}
 			msg->emg = v;
 			is_emg_seen = true;
 		}
@@ -335,12 +354,13 @@ static int seq_delta_idx(struct ncrx *ncrx, int delta)
 {
 	int idx = ncrx->head + delta;
 
-	if (idx < 0)
+	if (idx < 0) {
 		return idx + ncrx->p.nr_slots;
-	else if (idx >= ncrx->p.nr_slots)
+	} else if (idx >= ncrx->p.nr_slots) {
 		return idx - ncrx->p.nr_slots;
-	else
+	} else {
 		return idx;
+}
 }
 
 /* is @slot completely empty? */
@@ -354,8 +374,9 @@ static void slot_maybe_complete(struct ncrx_slot *slot)
 {
 	struct ncrx_msg *msg = slot->msg;
 
-	if (!msg || msg->ncfrag_left || list_empty(&slot->hole_node))
+	if (!msg || msg->ncfrag_left || list_empty(&slot->hole_node)) {
 		return;
+}
 
 	list_del(&slot->hole_node);
 }
@@ -406,8 +427,9 @@ static void make_room(struct ncrx *ncrx, int delta)
 		 */
 		ncrx->head_seq++;
 		ncrx->head = (ncrx->head + 1) % ncrx->p.nr_slots;
-		if (slot_dist(ncrx->tail, ncrx) > max_busy)
+		if (slot_dist(ncrx->tail, ncrx) > max_busy) {
 			retire_tail(ncrx);
+}
 	}
 }
 
@@ -455,8 +477,9 @@ static struct ncrx_slot *get_seq_slot(struct ncrx_msg *tmsg, struct ncrx *ncrx)
 			return NULL;
 		}
 
-		if (is_free)
+		if (is_free) {
 			slot->timestamp = ncrx->now_mono;
+}
 		errno = ENOENT;
 		return NULL;
 	}
@@ -475,8 +498,9 @@ static struct ncrx_msg *copy_msg(struct ncrx_msg *src)
 	assert(!src->dict && !src->dict_len);
 
 	dst = malloc(sizeof(*dst) + src->text_len + 1);
-	if (!dst)
+	if (!dst) {
 		return NULL;
+}
 
 	*dst = *src;
 	init_list(&dst->node);
@@ -505,8 +529,9 @@ static int queue_oos_msg(struct ncrx_msg *tmsg, struct ncrx *ncrx)
 	struct ncrx_msg *msg, *nmsg, *first;
 
 	msg = copy_msg(tmsg);
-	if (!msg)
+	if (!msg) {
 		return -1;
+}
 
 	msg_list_append(msg, &ncrx->oos_list);
 
@@ -533,8 +558,9 @@ static int queue_oos_msg(struct ncrx_msg *tmsg, struct ncrx *ncrx)
 	 * queueing it to reset the seq and then queueing all other oos
 	 * msgs.  If a msg is still oos after reset, just retire it.
 	 */
-	while (ncrx->tail != ncrx->head)
+	while (ncrx->tail != ncrx->head) {
 		retire_tail(ncrx);
+}
 
 	ncrx->head_seq = 0;
 	ncrx->acked_seq = UINT64_MAX;
@@ -570,8 +596,9 @@ static int ncrx_queue_payload(const char *payload, struct ncrx *ncrx,
 	struct ncrx_slot *slot;
 	int new_msg = 0;
 
-	if (parse_packet(payload, &tmsg))
+	if (parse_packet(payload, &tmsg)) {
 		return -1;
+}
 
 	tmsg.rx_at_mono = ncrx->now_mono;
 	tmsg.rx_at_real = now_real;
@@ -590,10 +617,12 @@ static int ncrx_queue_payload(const char *payload, struct ncrx *ncrx,
 		new_msg = 1;
 	}
 	if (!slot || !slot->msg) {
-		if (errno == ENOENT)
+		if (errno == ENOENT) {
 			return 0;
-		if (errno == ERANGE)
+}
+		if (errno == ERANGE) {
 			return queue_oos_msg(&tmsg, ncrx);
+}
 		return -1;
 	}
 
@@ -613,8 +642,9 @@ static int ncrx_queue_payload(const char *payload, struct ncrx *ncrx,
 		}
 
 		for (i = 0; i < tmsg.ncfrag_len; i++) {
-			if (msg->text[off + i])
+			if (msg->text[off + i]) {
 				continue;
+}
 			msg->text[off + i] = tmsg.text[i];
 			msg->ncfrag_left--;
 		}
@@ -632,8 +662,9 @@ static int ncrx_queue_payload(const char *payload, struct ncrx *ncrx,
 static void ncrx_build_resp(struct ncrx_slot *slot, struct ncrx *ncrx)
 {
 	/* no msg received? */
-	if (!ncrx->head_seq)
+	if (!ncrx->head_seq) {
 		return;
+}
 
 	/* "ncrx<ack-seq>" */
 	if (!ncrx->resp_len) {
@@ -667,9 +698,10 @@ int ncrx_process(const char *payload, uint64_t now_mono, uint64_t now_real,
 	uint64_t old_head_seq = ncrx->head_seq;
 	int dist_retx, ret = 0;
 
-	if (now_mono < ncrx->now_mono)
+	if (now_mono < ncrx->now_mono) {
 		fprintf(stderr, "ncrx: time regressed %"PRIu64"->%"PRIu64"\n",
 			ncrx->now_mono, now_mono);
+}
 
 	ncrx->now_mono = now_mono;
 	ncrx->resp_len = 0;
@@ -678,27 +710,31 @@ int ncrx_process(const char *payload, uint64_t now_mono, uint64_t now_real,
 	 * If fully acked, keep last ack timestamp current so that new
 	 * messages arriving doesn't trigger ack timeout immediately.
 	 */
-	if (ncrx->acked_seq == tail_seq(ncrx) - 1)
+	if (ncrx->acked_seq == tail_seq(ncrx) - 1) {
 		ncrx->acked_at = now_mono;
+}
 
 	/* parse and queue @payload */
-	if (payload)
+	if (payload) {
 		ret = ncrx_queue_payload(payload, ncrx, now_real);
+}
 
 	/* retire complete & timed-out msgs from tail */
 	while (ncrx->tail != ncrx->head) {
 		slot = &ncrx->slots[ncrx->tail];
 
 		if ((!slot->msg || !list_empty(&slot->hole_node)) &&
-		    slot->timestamp + ncrx->p.msg_timeout > now_mono)
+		    slot->timestamp + ncrx->p.msg_timeout > now_mono) {
 			break;
+}
 		retire_tail(ncrx);
 	}
 
 	/* retire timed-out oos msgs */
 	while ((msg = msg_list_peek(&ncrx->oos_list))) {
-		if (msg->rx_at_mono + ncrx->p.oos_timeout > now_mono)
+		if (msg->rx_at_mono + ncrx->p.oos_timeout > now_mono) {
 			break;
+}
 		msg->oos = 1;
 		msg_list_del(msg, &ncrx->oos_list);
 		msg_list_append(msg, &ncrx->retired_list);
@@ -706,8 +742,9 @@ int ncrx_process(const char *payload, uint64_t now_mono, uint64_t now_real,
 
 	/* if enabled, ack pending and timeout expired? */
 	if (ncrx->p.ack_intv && ncrx->acked_seq != tail_seq(ncrx) - 1 &&
-	    ncrx->acked_at + ncrx->p.ack_intv < now_mono)
+	    ncrx->acked_at + ncrx->p.ack_intv < now_mono) {
 		ncrx_build_resp(NULL, ncrx);
+}
 
 	/* head passed one or more re-transmission boundaries? */
 	dist_retx = old_head_seq / ncrx->p.retx_stride !=
@@ -722,8 +759,9 @@ int ncrx_process(const char *payload, uint64_t now_mono, uint64_t now_real,
 		 * certain number of times regardless of incoming rate.
 		 */
 		if (dist_retx &&
-		    slot_dist(slot - ncrx->slots, ncrx) > ncrx->p.retx_stride)
+		    slot_dist(slot - ncrx->slots, ncrx) > ncrx->p.retx_stride) {
 			retx = 1;
+}
 
 		/* request re-tx every retx_intv */
 		if (now_mono - max(slot->timestamp, slot->retx_timestamp) >=
@@ -732,8 +770,9 @@ int ncrx_process(const char *payload, uint64_t now_mono, uint64_t now_real,
 			retx = 1;
 		}
 
-		if (retx)
+		if (retx) {
 			ncrx_build_resp(slot, ncrx);
+}
 	}
 
 	return ret;
@@ -741,10 +780,12 @@ int ncrx_process(const char *payload, uint64_t now_mono, uint64_t now_real,
 
 const char *ncrx_response(struct ncrx *ncrx, int *lenp)
 {
-	if (lenp)
+	if (lenp) {
 		*lenp = ncrx->resp_len;
-	if (ncrx->resp_len)
+}
+	if (ncrx->resp_len) {
 		return ncrx->resp_buf;
+}
 	return NULL;
 }
 
@@ -765,8 +806,9 @@ struct ncrx_msg *ncrx_next_msg(struct ncrx *ncrx)
 {
 	struct ncrx_msg *msg = msg_list_pop(&ncrx->retired_list);
 
-	if (msg)
+	if (msg) {
 		terminate_msg_and_dict(msg);
+}
 
 	return msg;
 }
@@ -778,19 +820,22 @@ uint64_t ncrx_invoke_process_at(struct ncrx *ncrx)
 
 	/* ack enabled and pending? */
 	if (ncrx->p.ack_intv && ncrx->head_seq &&
-			ncrx->acked_seq != tail_seq(ncrx) - 1)
+			ncrx->acked_seq != tail_seq(ncrx) - 1) {
 		when = min(when, ncrx->acked_at + ncrx->p.ack_intv);
+}
 
 	/*
 	 * Holes to request for retransmission?  msg_timeout is the same
 	 * condition but way longer.  Checking on retx_intv is enough.
 	 */
-	if (!list_empty(&ncrx->hole_list))
+	if (!list_empty(&ncrx->hole_list)) {
 		when = min(when, ncrx->now_mono + ncrx->p.retx_intv);
+}
 
 	/* oos timeout */
-	if ((msg = msg_list_peek(&ncrx->oos_list)))
+	if ((msg = msg_list_peek(&ncrx->oos_list))) {
 		when = min(when, msg->rx_at_mono + ncrx->p.oos_timeout);
+}
 
 	/* min 10ms intv to avoid busy loop in case something goes bonkers */
 	return max(when, ncrx->now_mono + 10);
@@ -804,8 +849,9 @@ struct ncrx *ncrx_create(const struct ncrx_param *param)
 	int i;
 
 	ncrx = calloc(1, sizeof(*ncrx));
-	if (!ncrx)
+	if (!ncrx) {
 		return NULL;
+}
 
 	p = &ncrx->p;
 	if (param) {
@@ -834,8 +880,9 @@ struct ncrx *ncrx_create(const struct ncrx_param *param)
 		return NULL;
 	}
 
-	for (i = 0; i < ncrx->p.nr_slots; i++)
+	for (i = 0; i < ncrx->p.nr_slots; i++) {
 		init_list(&ncrx->slots[i].hole_node);
+}
 
 	return ncrx;
 }
@@ -845,14 +892,17 @@ void ncrx_destroy(struct ncrx *ncrx)
 	struct ncrx_msg *msg;
 	int i;
 
-	for (i = 0; i < ncrx->p.nr_slots; i++)
+	for (i = 0; i < ncrx->p.nr_slots; i++) {
 		free(ncrx->slots[i].msg);
+}
 
-	while ((msg = msg_list_pop(&ncrx->oos_list)))
+	while ((msg = msg_list_pop(&ncrx->oos_list))) {
 		free(msg);
+}
 
-	while ((msg = msg_list_pop(&ncrx->retired_list)))
+	while ((msg = msg_list_pop(&ncrx->retired_list))) {
 		free(msg);
+}
 
 	free(ncrx->slots);
 	free(ncrx);
