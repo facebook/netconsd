@@ -87,7 +87,7 @@ void destroy_output_modules(void)
 		ret = dlclose(output_dlhandles[i]);
 		if (ret) {
 			warn("dlclose() failed: %s\n", dlerror());
-}
+		}
 
 		free((void *)path);
 	}
@@ -100,5 +100,5 @@ void execute_output_pipeline(int thread_nr, struct in6_addr *src,
 
 	for (i = 0; i < nr_outputs; i++) {
 		outputs[i](thread_nr, src, buf, msg);
-}
+	}
 }

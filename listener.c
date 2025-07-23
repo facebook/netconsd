@@ -57,7 +57,7 @@ static void prequeue_msgbuf(struct ncrx_listener *listener, struct msg_buf *buf)
 		prequeue->queue_tail->next = buf;
 	} else {
 		prequeue->queue_head = buf;
-}
+	}
 
 	prequeue->queue_tail = buf;
 	prequeue->count++;
@@ -73,7 +73,7 @@ static void reinit_mmsghdr_vec(struct mmsghdr *vec, int nr, int rcvbufsz)
 		cur = malloc(sizeof(*cur) + rcvbufsz);
 		if (!cur) {
 			fatal("-ENOMEM after %d/%d rcvbufs\n", i, nr);
-}
+		}
 
 		memset(cur, 0, sizeof(*cur));
 		cur->buf[rcvbufsz - 1] = '\0';
@@ -96,7 +96,7 @@ static struct mmsghdr *alloc_mmsghdr_vec(int nr, int rcvbufsz)
 	mmsgvec = malloc(sizeof(*mmsgvec) * nr);
 	if (!mmsgvec) {
 		fatal("Unable to allocate mmsghdr array\n");
-}
+	}
 
 	reinit_mmsghdr_vec(mmsgvec, nr, rcvbufsz);
 	return mmsgvec;
@@ -122,17 +122,17 @@ static int get_listen_socket(struct sockaddr_in6 *bindaddr)
 	fd = socket(AF_INET6, SOCK_DGRAM, 0);
 	if (fd == -1) {
 		fatal("Couldn't get socket: %m\n");
-}
+	}
 
 	ret = setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval));
 	if (ret == -1) {
 		fatal("Couldn't set SO_REUSEPORT on socket: %m\n");
-}
+	}
 
 	ret = bind(fd, (const struct sockaddr *)bindaddr, sizeof(*bindaddr));
 	if (ret == -1) {
 		fatal("Couldn't bind: %m\n");
-}
+	}
 
 	return fd;
 }

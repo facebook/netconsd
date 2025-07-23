@@ -60,7 +60,7 @@ static int ones_complement_sum(uint16_t *data, int len, int sum)
 		 */
 		if (tmp == 65535) {
 			tmp = 0;
-}
+		}
 
 		sum += tmp;
 		if (sum >= 65536) {
@@ -71,7 +71,7 @@ static int ones_complement_sum(uint16_t *data, int len, int sum)
 
 	if (len & 1) {
 		fatal("Use test data with even lengths please\n");
-}
+	}
 
 	return sum;
 }
@@ -110,7 +110,7 @@ static int udp_csum(void *addrptr, void *udppkt, int len)
 	 */
 	if (sum == 0) {
 		sum = 65535;
-}
+	}
 
 	return sum;
 }
@@ -195,7 +195,7 @@ static void make_packet(struct netcons_packet *pkt, const struct in6_addr *src,
 		      md->lvl, md->seq, md->ts, contflag(md->cont));
 	if (nr < len) {
 		snprintf(pkt->payload + nr, len - nr, "%s", filler);
-}
+	}
 	pkt->payload[len - 1] = '\n';
 
 	pkt->l4.uh_sport = htons(6666);
@@ -224,7 +224,7 @@ static int get_raw_socket(void)
 	fd = socket(AF_INET6, SOCK_RAW, IPPROTO_RAW);
 	if (fd == -1) {
 		fatal("Couldn't get raw socket: %m\n");
-}
+	}
 
 	return fd;
 }
@@ -236,7 +236,7 @@ static struct netcons_packet *alloc_packet(void)
 	ret = malloc(sizeof(struct netcons_packet) + NETCONSLEN);
 	if (!ret) {
 		fatal("ENOMEM allocating packet\n");
-}
+	}
 
 	return ret;
 }
@@ -248,7 +248,7 @@ static struct netcons_metadata *alloc_metadata_array(int bits)
 	ret = calloc(1 << bits, sizeof(*ret));
 	if (!ret) {
 		fatal("ENOMEM allocating metadata\n");
-}
+	}
 
 	return ret;
 }
@@ -309,11 +309,11 @@ static void *blaster_thread(void *arg)
 
 		if (!write_packet(fd, pkt)) {
 			count++;
-}
+		}
 
 		if (_blaster_state->blastcount && count == _blaster_state->blastcount) {
 			break;
-}
+		}
 	}
 
 	return (void*)count;
@@ -368,7 +368,7 @@ static void parse_arguments(int argc, char **argv, struct params *p)
 			p->srcaddr_order = atoi(optarg);
 			if (p->srcaddr_order > 64 - 8) {
 				fatal("Source address order too large\n");
-}
+			}
 			break;
 		case 't':
 			/*
@@ -377,7 +377,7 @@ static void parse_arguments(int argc, char **argv, struct params *p)
 			p->thread_order = atoi(optarg);
 			if (p->thread_order > 8) {
 				fatal("Largest supported thread order is 8\n");
-}
+			}
 			break;
 		case 's':
 			/*
@@ -385,7 +385,7 @@ static void parse_arguments(int argc, char **argv, struct params *p)
 			 */
 			if (inet_pton(AF_INET6, optarg, &p->src) != 1) {
 				fatal("Bad src '%s': %m\n", optarg);
-}
+			}
 			break;
 		case 'd':
 			/*
@@ -393,7 +393,7 @@ static void parse_arguments(int argc, char **argv, struct params *p)
 			 */
 			if (inet_pton(AF_INET6, optarg, &p->dst) != 1) {
 				fatal("Bad dst '%s': %m\n", optarg);
-}
+			}
 			break;
 		case 'n':
 			/*
@@ -443,12 +443,12 @@ int main(int argc, char **argv)
 
 	if (srcaddr_per_thread <= 0) {
 		fatal("More thread bits than srcaddr bits\n");
-}
+	}
 
 	threadstates = calloc(nr_threads, sizeof(*threadstates));
 	if (!threadstates) {
 		fatal("ENOMEM allocating state for threads\n");
-}
+	}
 
 	sigaction(SIGINT, &stopper, NULL);
 
@@ -467,7 +467,7 @@ int main(int argc, char **argv)
 
 		if (pthread_create(&threadstate->id, NULL, blaster_thread, threadstate)) {
 			fatal("Thread %d/%d failed: %m\n", i, nr_threads);
-}
+		}
 	}
 
 	count = 0;

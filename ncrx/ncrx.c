@@ -78,7 +78,7 @@ int main(int argc, char **argv)
 			timeout = 0;
 			if (next_at > now) {
 				timeout = next_at - now;
-}
+			}
 		}
 
 		if (poll(&pfd, 1, timeout) < 0) {
@@ -111,7 +111,7 @@ int main(int argc, char **argv)
 			if (errno == EINVAL) {
 				while (len && isspace(payload[len - 1])) {
 					payload[--len] = '\0';
-}
+				}
 				printf("[%12s] %s\n", "INVAL", payload);
 			} else {
 				perror("ncrx_process");
@@ -122,7 +122,7 @@ int main(int argc, char **argv)
 		if (resp && sendto(fd, resp, len, 0,
 				   (struct sockaddr *)&raddr, raddr_len) < 0) {
 			perror("sendto");
-}
+		}
 
 		while ((msg = ncrx_next_msg(ncrx))) {
 			const char *pnl = prev_cont ? "\n" : "";
@@ -148,14 +148,14 @@ int main(int argc, char **argv)
 				printf("%s[%5"PRIu64".%06"PRIu64"] ", pnl,
 				       msg->ts_usec / 1000000,
 				       msg->ts_usec % 1000000);
-}
+			}
 
 			printf("%s", msg->text);
 
 			prev_cont = msg->cont_start || msg->cont;
 			if (!prev_cont) {
 				printf("\n");
-}
+			}
 		}
 
 		next_at = ncrx_invoke_process_at(ncrx);
