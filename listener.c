@@ -18,7 +18,7 @@
 
 static void handle_listen_error(int err)
 {
-	switch(err) {
+	switch (err) {
 	case EINTR:
 		/*
 		 * The fact that we got an error return means that recvmmsg()
