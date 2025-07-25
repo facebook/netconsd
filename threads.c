@@ -50,7 +50,8 @@ static void push_prequeue_to_worker(struct ncrx_listener *listener, int worker)
 	prequeue->queue_head = NULL;
 
 	debug("Listener %d pushed %d pkts to worker %d (backlog: %d)\n",
-		listener->thread_nr, prequeue->count, worker->thread_nr, tgt->nr_queued);
+	      listener->thread_nr, prequeue->count, worker->thread_nr,
+	      tgt->nr_queued);
 
 	tgt->nr_queued += prequeue->count;
 	prequeue->count = 0;
@@ -99,13 +100,14 @@ static void stop_and_wait_for_workers(struct tctl *ctl)
 
 		total_processed += ctl->workers[i].processed;
 		total_hosts += ctl->workers[i].hosts_seen;
-		log("Exiting worker %d got %" PRIu64 " msgs from %" PRIu64 " hosts\n",
-				i, ctl->workers[i].processed,
-				ctl->workers[i].hosts_seen);
+		log("Exiting worker %d got %" PRIu64 " msgs from %" PRIu64
+		    " hosts\n",
+		    i, ctl->workers[i].processed, ctl->workers[i].hosts_seen);
 	}
 
-	log("Total messages processed by workers: %" PRIu64 " from %" PRIu64 " hosts\n",
-			total_processed, total_hosts);
+	log("Total messages processed by workers: %" PRIu64 " from %" PRIu64
+	    " hosts\n",
+	    total_processed, total_hosts);
 	free(ctl->workers);
 }
 
@@ -123,11 +125,11 @@ static void stop_and_wait_for_listeners(struct tctl *ctl)
 
 		total_processed += ctl->listeners[i].processed;
 		log("Exiting listener %d queued %" PRIu64 " messages\n", i,
-				ctl->listeners[i].processed);
+		    ctl->listeners[i].processed);
 	}
 
 	log("Total messages processed by listeners: %" PRIu64 "\n",
-			total_processed);
+	    total_processed);
 	free(ctl->listeners);
 }
 

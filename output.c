@@ -19,7 +19,7 @@
 static void *output_dlhandles[MAXOUTS];
 static const char *output_dlpaths[MAXOUTS];
 static void (*outputs[MAXOUTS])(int, struct in6_addr *, struct msg_buf *,
-		struct ncrx_msg *);
+				struct ncrx_msg *);
 static int nr_outputs;
 
 int register_output_module(char *path, int nr_workers)
@@ -34,7 +34,7 @@ int register_output_module(char *path, int nr_workers)
 	}
 
 	log("Loading module '%s'\n", path);
-	dl = dlopen(path, RTLD_NOW|RTLD_LOCAL);
+	dl = dlopen(path, RTLD_NOW | RTLD_LOCAL);
 	if (!dl) {
 		warn("Can't open '%s': %s", path, dlerror());
 		return -1;
@@ -94,7 +94,7 @@ void destroy_output_modules(void)
 }
 
 void execute_output_pipeline(int thread_nr, struct in6_addr *src,
-		struct msg_buf *buf, struct ncrx_msg *msg)
+			     struct msg_buf *buf, struct ncrx_msg *msg)
 {
 	int i;
 
