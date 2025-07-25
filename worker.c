@@ -184,9 +184,9 @@ static uint64_t timerlist_peek(struct timerlist *list)
 	return list->prev->when;
 }
 
-#define timerlist_for_each(this, n, thead)                          \
+#define timerlist_for_each(this, n, thead) \
 	for (this = (thead)->next, n = this->next; this != (thead); \
-	     this = n, n = this->next)
+		this = n, n = this->next)
 
 static struct timerlist *create_timerlists(void)
 {
@@ -343,7 +343,7 @@ static void try_to_garbage_collect(struct ncrx_worker *cur)
 	end = now_mono_ms();
 
 	log("Worker %d GC'd %lu in %" PRIu64 "ms\n", cur->thread_nr, count,
-	    end - now);
+			end - now);
 }
 
 static void maybe_garbage_collect(struct ncrx_worker *cur)
@@ -361,7 +361,7 @@ static void maybe_garbage_collect(struct ncrx_worker *cur)
 }
 
 static void schedule_ncrx_callback(struct ncrx_worker *cur, struct bucket *bkt,
-				   uint64_t when)
+		uint64_t when)
 {
 	struct timerlist *tgtlist;
 	uint64_t now;
@@ -483,7 +483,7 @@ static void consume_msgbuf(struct ncrx_worker *cur, struct msg_buf *buf)
 		ncrx_bucket->ncrx = ncrx_create(&ncrx_param);
 		timerlist_init(&ncrx_bucket->timernode);
 		memcpy(&ncrx_bucket->src, &buf->src.sin6_addr,
-		       sizeof(ncrx_bucket->src));
+				sizeof(ncrx_bucket->src));
 		cur->ht->load++;
 	}
 
@@ -491,7 +491,7 @@ static void consume_msgbuf(struct ncrx_worker *cur, struct msg_buf *buf)
 
 	buf->buf[buf->rcv_bytes] = '\0';
 	if (!ncrx_process(buf->buf, now_mono_ms(), buf->rcv_time,
-			  ncrx_bucket->ncrx)) {
+			ncrx_bucket->ncrx)) {
 		drain_bucket_ncrx(cur, ncrx_bucket);
 		return;
 	}
@@ -524,7 +524,7 @@ void *ncrx_worker_thread(void *arg)
 	pthread_mutex_lock(&cur->queuelock);
 	while (!cur->stop) {
 		pthread_cond_timedwait(&cur->cond, &cur->queuelock,
-				       next_waketime(cur));
+				next_waketime(cur));
 
 		reset_waketime(cur);
 morework:

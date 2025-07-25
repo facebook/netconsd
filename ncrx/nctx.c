@@ -23,32 +23,32 @@
 #include "ncrx.h"
 
 /* in msecs */
-#define ACK_TIMEOUT 10000
-#define EMG_TX_MAX_INTV 1000
-#define EMG_TX_MIN_INTV 100
+#define ACK_TIMEOUT		10000
+#define EMG_TX_MAX_INTV		1000
+#define EMG_TX_MIN_INTV		100
 
 union sockaddr_in46 {
-	struct sockaddr addr;
-	struct sockaddr_in6 in6;
-	struct sockaddr_in in4;
+	struct sockaddr		addr;
+	struct sockaddr_in6	in6;
+	struct sockaddr_in	in4;
 };
 
 struct kmsg_slot {
-	char *msg;
-	uint64_t ts;
+	char			*msg;
+	uint64_t		ts;
 };
 
 struct kmsg_ring {
-	int head;
-	int tail;
-	int nr_slots;
-	uint64_t head_seq;
-	union sockaddr_in46 raddr;
-	int raddr_len;
-	int emg_tx_intv;
-	uint64_t emg_tx_seq;
-	uint64_t emg_tx_ts;
-	struct kmsg_slot *slots;
+	int			head;
+	int			tail;
+	int			nr_slots;
+	uint64_t		head_seq;
+	union sockaddr_in46	raddr;
+	int			raddr_len;
+	int			emg_tx_intv;
+	uint64_t		emg_tx_seq;
+	uint64_t		emg_tx_ts;
+	struct kmsg_slot	*slots;
 };
 
 /* relative time in msecs */
@@ -120,7 +120,7 @@ next_line:
 
 	/* read seq and see if it makes sense */
 	buf[len] = '\0';
-	if (sscanf(buf, "%d,%" SCNu64 ",", &level, &seq) != 2 ||
+	if (sscanf(buf, "%d,%"SCNu64",", &level, &seq) != 2 ||
 	    seq < ring->head_seq) {
 		fprintf(stderr, "Warning: malformed kmsg \"%s\"\n", buf);
 		goto next_line;
@@ -205,8 +205,8 @@ static void kmsg_ring_consume(struct kmsg_ring *ring, uint64_t upto_seq)
  * NCRX_PKT_MAX byte chunks with ncfrag header added.  If @is_emg_tx is
  * set, add ncemg header.
  */
-static void send_kmsg(int sock, char *msg, int is_emg_tx, struct sockaddr *addr,
-		      int addr_len)
+static void send_kmsg(int sock, char *msg, int is_emg_tx,
+		      struct sockaddr *addr, int addr_len)
 {
 	char buf[NCRX_PKT_MAX + 1];
 	const int max_extra_len = sizeof(",ncemg=1,ncfrag=0000/0000");
@@ -265,8 +265,8 @@ static void send_kmsg(int sock, char *msg, int is_emg_tx, struct sockaddr *addr,
 		if (nr_chunks > 1 && this_header < sizeof(buf)) {
 			this_header += snprintf(buf + this_header,
 						sizeof(buf) - this_header,
-						",ncfrag=%d/%d", offset,
-						body_len);
+						",ncfrag=%d/%d",
+						offset, body_len);
 		}
 		if (this_header < sizeof(buf)) {
 			this_header += snprintf(buf + this_header,
@@ -274,8 +274,7 @@ static void send_kmsg(int sock, char *msg, int is_emg_tx, struct sockaddr *addr,
 		}
 
 		if (this_header + chunk_len > NCRX_PKT_MAX) {
-			fprintf(stderr,
-				"Error: this_header %d is too large for chunk_len %d in send_kmsg()\n",
+			fprintf(stderr, "Error: this_header %d is too large for chunk_len %d in send_kmsg()\n",
 				this_header, chunk_len);
 			return;
 		}
@@ -294,8 +293,7 @@ static int kmsg_ring_process_resps(struct kmsg_ring *ring, int sock)
 	char rx_buf[NCRX_PKT_MAX + 1];
 	union sockaddr_in46 raddr;
 	struct iovec iov = { .iov_base = rx_buf, .iov_len = NCRX_PKT_MAX };
-	struct msghdr msgh = { .msg_name = &raddr.addr,
-			       .msg_iov = &iov,
+	struct msghdr msgh = { .msg_name = &raddr.addr, .msg_iov = &iov,
 			       .msg_iovlen = 1 };
 	ssize_t len;
 	char *pos, *tok;
@@ -320,11 +318,11 @@ next_packet:
 		char addr_str[INET6_ADDRSTRLEN];
 
 		if (raddr.addr.sa_family == AF_INET6) {
-			inet_ntop(AF_INET6, &raddr.in6.sin6_addr, addr_str,
-				  sizeof(addr_str));
+			inet_ntop(AF_INET6, &raddr.in6.sin6_addr,
+				  addr_str, sizeof(addr_str));
 		} else {
-			inet_ntop(AF_INET, &raddr.in4.sin_addr, addr_str,
-				  sizeof(addr_str));
+			inet_ntop(AF_INET, &raddr.in4.sin_addr,
+				  addr_str, sizeof(addr_str));
 		}
 
 		fprintf(stderr, "Warning: malformed packet from [%s]:%u\n",
@@ -334,17 +332,17 @@ next_packet:
 	tok += 4;
 
 	/* <ack-seq> */
-	if (sscanf(tok, "%" SCNu64, &seq)) {
+	if (sscanf(tok, "%"SCNu64, &seq)) {
 		kmsg_ring_consume(ring, seq);
 	}
 
 	/* <missing-seq>... */
 	while ((tok = strsep(&pos, " "))) {
-		if (sscanf(tok, "%" SCNu64, &seq)) {
+		if (sscanf(tok, "%"SCNu64, &seq)) {
 			char *msg = kmsg_ring_peek(ring, seq);
 			if (msg) {
-				send_kmsg(sock, msg, 0, &raddr.addr,
-					  msgh.msg_namelen);
+				send_kmsg(sock, msg, 0,
+					  &raddr.addr, msgh.msg_namelen);
 			}
 		}
 	}
@@ -423,15 +421,14 @@ static void usage_err(const char *err)
 	if (err) {
 		fprintf(stderr, "Error: %s\n", err);
 	}
-	fprintf(stderr,
-		"Usage: nctx [-n nr_slots] [-k devkmsg_path] ip port\n");
+	fprintf(stderr, "Usage: nctx [-n nr_slots] [-k devkmsg_path] ip port\n");
 	exit(1);
 }
 
 int main(int argc, char **argv)
 {
-	union sockaddr_in46 laddr = {};
-	struct pollfd pfds[2] = {};
+	union sockaddr_in46 laddr = { };
+	struct pollfd pfds[2] = { };
 	struct kmsg_ring kmsg_ring;
 	const char *devkmsg_path = "/dev/kmsg";
 	int nr_slots = NCRX_DFL_NR_SLOTS;

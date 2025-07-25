@@ -44,14 +44,11 @@ static void parse_arguments(int argc, char **argv, struct netconsd_params *p)
 			p->mmsg_batch = atoi(optarg);
 			break;
 		case 'a':
-			if (!inet_pton(AF_INET6, optarg,
-				       &p->listen_addr.sin6_addr)) {
+			if (!inet_pton(AF_INET6, optarg, &p->listen_addr.sin6_addr)) {
 				char v4[sizeof("::ffff:XXX.XXX.XXX.XXX")];
 				snprintf(v4, sizeof(v4), "::ffff:%s", optarg);
-				if (!inet_pton(AF_INET6, v4,
-					       &p->listen_addr.sin6_addr)) {
+				if (!inet_pton(AF_INET6, v4, &p->listen_addr.sin6_addr))
 					fatal("invalid listen address\n");
-				}
 			}
 
 			debug("listening for address %s\n", optarg);
@@ -75,10 +72,9 @@ static void parse_arguments(int argc, char **argv, struct netconsd_params *p)
 			goto done;
 		case 'h':
 			printf("Usage: %s [-w workers] [-l listeners] "
-			       "[-b mmsg_batch] [-a udp_listen_addr] [-u udp_listen_port] "
-			       "[-g '${interval}/${age}'] [output module path] "
-			       "[another output module path...]\n",
-			       argv[0]);
+			     "[-b mmsg_batch] [-a udp_listen_addr] [-u udp_listen_port] "
+			     "[-g '${interval}/${age}'] [output module path] "
+			     "[another output module path...]\n", argv[0]);
 			exit(0);
 		default:
 			exit(1);
@@ -142,16 +138,18 @@ int main(int argc, char **argv)
 	int num;
 	sigset_t set;
 	struct tctl *ctl;
-	struct netconsd_params params = { .nr_workers = 2,
-					  .nr_listeners = 1,
-					  .mmsg_batch = 512,
-					  .gc_int_ms = 0,
-					  .gc_age_ms = 0,
-					  .listen_addr = {
-						  .sin6_family = AF_INET6,
-						  .sin6_addr = IN6ADDR_ANY_INIT,
-						  .sin6_port = htons(1514),
-					  } };
+	struct netconsd_params params = {
+		.nr_workers = 2,
+		.nr_listeners = 1,
+		.mmsg_batch = 512,
+		.gc_int_ms = 0,
+		.gc_age_ms = 0,
+		.listen_addr = {
+			.sin6_family = AF_INET6,
+			.sin6_addr = IN6ADDR_ANY_INIT,
+			.sin6_port = htons(1514),
+		}
+	};
 
 	parse_arguments(argc, argv, &params);
 

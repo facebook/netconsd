@@ -12,10 +12,10 @@
 
 #include <inttypes.h>
 
-#define NCRX_LINE_MAX 8192
+#define NCRX_LINE_MAX		8192
 
 /* max payload len for responses, this is what netconsole uses on tx side */
-#define NCRX_PKT_MAX 1000
+#define NCRX_PKT_MAX		1000
 
 #include "ncrx-struct.h"
 
@@ -57,30 +57,30 @@
  *	out-of-order message, the message is output.
  */
 struct ncrx_param {
-	int nr_slots;
+	int			nr_slots;
 
-	int ack_intv;
-	int retx_intv;
-	int retx_stride;
-	int msg_timeout;
+	int			ack_intv;
+	int			retx_intv;
+	int			retx_stride;
+	int			msg_timeout;
 
-	int oos_thr;
-	int oos_intv;
-	int oos_timeout;
+	int			oos_thr;
+	int			oos_intv;
+	int			oos_timeout;
 };
 
 /* default params */
-#define NCRX_DFL_NR_SLOTS 8192
+#define NCRX_DFL_NR_SLOTS	8192
 
-#define NCRX_DFL_ACK_INTV 0 /* disable ack logic by default */
+#define NCRX_DFL_ACK_INTV	0	/* disable ack logic by default */
 
-#define NCRX_DFL_RETX_INTV 1000
-#define NCRX_DFL_RETX_STRIDE 256
-#define NCRX_DFL_MSG_TIMEOUT 30000
+#define NCRX_DFL_RETX_INTV	1000
+#define NCRX_DFL_RETX_STRIDE	256
+#define NCRX_DFL_MSG_TIMEOUT	30000
 
-#define NCRX_DFL_OOS_THR (32 * 3 / 5) /* 19 */
-#define NCRX_DFL_OOS_INTV 5000
-#define NCRX_DFL_OOS_TIMEOUT NCRX_DFL_MSG_TIMEOUT
+#define NCRX_DFL_OOS_THR	(32 * 3 / 5)			/* 19 */
+#define NCRX_DFL_OOS_INTV	5000
+#define NCRX_DFL_OOS_TIMEOUT	NCRX_DFL_MSG_TIMEOUT
 
 /*
  * A ncrx instance is created by ncrx_create() and destroyed by
@@ -140,9 +140,9 @@ void ncrx_destroy(struct ncrx *ncrx);
  * See tools/ncrx/ncrx.c for a simple example.
  */
 int ncrx_process(const char *payload, uint64_t now_mono, uint64_t now_real,
-		 struct ncrx *ncrx);
+		struct ncrx *ncrx);
 const char *ncrx_response(struct ncrx *ncrx, int *lenp);
 struct ncrx_msg *ncrx_next_msg(struct ncrx *ncrx);
 uint64_t ncrx_invoke_process_at(struct ncrx *ncrx);
 
-#endif /* __NETCONSOLE_NCRX__ */
+#endif	/* __NETCONSOLE_NCRX__ */

@@ -20,9 +20,9 @@
 #include "ncrx.h"
 
 union sockaddr_in46 {
-	struct sockaddr addr;
-	struct sockaddr_in6 in6;
-	struct sockaddr_in in4;
+	struct sockaddr		addr;
+	struct sockaddr_in6	in6;
+	struct sockaddr_in	in4;
 };
 
 int main(int argc, char **argv)
@@ -30,7 +30,7 @@ int main(int argc, char **argv)
 	char buf[NCRX_LINE_MAX + 1];
 	struct ncrx_param param = { .ack_intv = 1000 };
 	struct ncrx *ncrx;
-	struct sockaddr_in6 laddr = {};
+	struct sockaddr_in6 laddr = { };
 	uint64_t next_seq = 0, next_at = UINT64_MAX, now;
 	int prev_cont = 0;
 	int fd;
@@ -119,8 +119,8 @@ int main(int argc, char **argv)
 		}
 
 		resp = ncrx_response(ncrx, &len);
-		if (resp && sendto(fd, resp, len, 0, (struct sockaddr *)&raddr,
-				   raddr_len) < 0) {
+		if (resp && sendto(fd, resp, len, 0,
+				   (struct sockaddr *)&raddr, raddr_len) < 0) {
 			perror("sendto");
 		}
 
@@ -133,20 +133,19 @@ int main(int argc, char **argv)
 				continue;
 			}
 			if (msg->seq_reset) {
-				printf("%s[%12s] seq=%" PRIu64 "\n", pnl,
-				       "SEQ RESET", msg->seq);
+				printf("%s[%12s] seq=%"PRIu64"\n",
+				       pnl, "SEQ RESET", msg->seq);
 				next_seq = msg->seq;
 			}
 			if (msg->seq != next_seq) {
-				printf("%s[%12s] %" PRIu64
-				       " messages skipped\n",
+				printf("%s[%12s] %"PRIu64" messages skipped\n",
 				       pnl, "SEQ SKIPPED", msg->seq - next_seq);
 			}
 
 			next_seq = msg->seq + 1;
 
 			if (!msg->cont || !prev_cont) {
-				printf("%s[%5" PRIu64 ".%06" PRIu64 "] ", pnl,
+				printf("%s[%5"PRIu64".%06"PRIu64"] ", pnl,
 				       msg->ts_usec / 1000000,
 				       msg->ts_usec % 1000000);
 			}

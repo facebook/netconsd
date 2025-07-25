@@ -29,19 +29,19 @@ void netconsd_output_exit(void)
  * This is the actual function called by netconsd.
  */
 void netconsd_output_handler(int t, struct in6_addr *src, struct msg_buf *buf,
-			     struct ncrx_msg *msg)
+		struct ncrx_msg *msg)
 {
-	char addr[INET6_ADDRSTRLEN] = { 0 };
+	char addr[INET6_ADDRSTRLEN] = {0};
 
 	inet_ntop(AF_INET6, src, addr, INET6_ADDRSTRLEN);
 	if (!msg)
 		printf("%40s: %s\n", addr, buf->buf);
 	else
-		printf("%40s: %s S%06" PRIu64 " T%014" PRIu64
-		       " F%d/L%d %s%s%s%s%s\n",
-		       addr, msg->version, msg->seq, msg->ts_usec,
-		       msg->facility, msg->level,
-		       msg->cont_start ? "[CONT START] " : "",
-		       msg->cont ? "[CONT] " : "", msg->oos ? "[OOS] " : "",
-		       msg->seq_reset ? "[SEQ RESET] " : "", msg->text);
+		printf("%40s: %s S%06" PRIu64 " T%014" PRIu64 " F%d/L%d %s%s%s%s%s\n", addr,
+			msg->version, msg->seq, msg->ts_usec, msg->facility, msg->level,
+			msg->cont_start ? "[CONT START] " : "",
+			msg->cont ? "[CONT] " : "",
+			msg->oos ? "[OOS] ": "",
+			msg->seq_reset ? "[SEQ RESET] " : "",
+			msg->text);
 }

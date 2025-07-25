@@ -26,16 +26,16 @@
 #error Sorry, SOCK_RAW is not portable
 #endif
 
-#define fatal(...)                   \
-	do {                         \
-		printf(__VA_ARGS__); \
-		exit(EXIT_FAILURE);  \
-	} while (0)
+#define fatal(...) \
+do { \
+	printf(__VA_ARGS__); \
+	exit(EXIT_FAILURE); \
+} while (0)
 
 static uint64_t rand64(unsigned int *seed)
 {
 	uint64_t ret;
-	ret = (uint64_t)rand_r(seed) << 32 | rand_r(seed);
+	ret = (uint64_t) rand_r(seed) << 32 | rand_r(seed);
 	return ret;
 }
 
@@ -96,7 +96,7 @@ static int udp_csum(void *addrptr, void *udppkt, int len)
 {
 	unsigned int sum = 0;
 	uint16_t *addrs = addrptr;
-	uint16_t pseudohdr[4] = { 0, htons(len), 0, htons(IPPROTO_UDP) };
+	uint16_t pseudohdr[4] = {0, htons(len), 0, htons(IPPROTO_UDP)};
 
 	sum = ones_complement_sum(addrs, 32, 0);
 	sum = ones_complement_sum(pseudohdr, 8, sum);
@@ -148,8 +148,7 @@ static void bump_metadata(struct netcons_metadata *md)
 /*
  * Filler text for packets.
  */
-static const char *filler =
-	"012345678901234567890123456789012345678901234567890123456789012";
+static const char *filler = "012345678901234567890123456789012345678901234567890123456789012";
 
 /*
  * Numeric to symbol for the CONT flag
@@ -178,8 +177,7 @@ static const char *contflag(int cont)
 }
 
 static void make_packet(struct netcons_packet *pkt, const struct in6_addr *src,
-			const struct in6_addr *dst, const int16_t *dst_port,
-			const struct netcons_metadata *md)
+		const struct in6_addr *dst, const int16_t *dst_port, const struct netcons_metadata *md)
 {
 	const int len = NETCONSLEN;
 	unsigned int nr;
@@ -203,8 +201,8 @@ static void make_packet(struct netcons_packet *pkt, const struct in6_addr *src,
 	pkt->l4.uh_sport = htons(6666);
 	pkt->l4.uh_dport = htons(*dst_port);
 	pkt->l4.uh_ulen = htons(sizeof(pkt->l4) + len);
-	pkt->l4.uh_sum = htons(
-		udp_csum(&pkt->l3.ip6_src, &pkt->l4, sizeof(pkt->l4) + len));
+	pkt->l4.uh_sum = htons(udp_csum(&pkt->l3.ip6_src, &pkt->l4,
+			 sizeof(pkt->l4) + len));
 }
 
 static int write_packet(int sockfd, struct netcons_packet *pkt)
@@ -305,23 +303,20 @@ static void *blaster_thread(void *arg)
 	_blaster_state->seed = syscall(SYS_gettid);
 
 	while (!*_blaster_state->stopptr) {
-		idx = permute_addr(&src, _blaster_state->bits,
-				   &_blaster_state->seed);
-		make_packet(pkt, &src, &_blaster_state->dst,
-			    &_blaster_state->dst_port, &mdarr[idx]);
+		idx = permute_addr(&src, _blaster_state->bits, &_blaster_state->seed);
+		make_packet(pkt, &src, &_blaster_state->dst, &_blaster_state->dst_port, &mdarr[idx]);
 		bump_metadata(&mdarr[idx]);
 
 		if (!write_packet(fd, pkt)) {
 			count++;
 		}
 
-		if (_blaster_state->blastcount &&
-		    count == _blaster_state->blastcount) {
+		if (_blaster_state->blastcount && count == _blaster_state->blastcount) {
 			break;
 		}
 	}
 
-	return (void *)count;
+	return (void*)count;
 }
 
 static struct params {
@@ -410,8 +405,8 @@ static void parse_arguments(int argc, char **argv, struct params *p)
 			/*
 			 * Set the destination UDP port for outgoing packets.
 			 */
-			p->dst_port = atoi(optarg);
-			break;
+			 p->dst_port = atoi(optarg);
+			 break;
 		case 'h':
 			puts("Usage: netconsblaster [-o srcaddr_bits] [-t thread_order]\n"
 			     "                      [-s srcaddr] [-d dstaddr]\n"
@@ -427,7 +422,7 @@ static void parse_arguments(int argc, char **argv, struct params *p)
 	}
 }
 
-static void stop_signal(__attribute__((__unused__)) int signum)
+static void stop_signal(__attribute__((__unused__))int signum)
 {
 	params.stop_blasting = 1;
 }
@@ -460,12 +455,9 @@ int main(int argc, char **argv)
 	for (i = 0; i < nr_threads; i++) {
 		threadstate = &threadstates[i];
 
-		memcpy(&threadstate->src, &params.src,
-		       sizeof(threadstate->src));
-		memcpy(&threadstate->dst, &params.dst,
-		       sizeof(threadstate->dst));
-		memcpy(&threadstate->dst_port, &params.dst_port,
-		       sizeof(threadstate->dst_port));
+		memcpy(&threadstate->src, &params.src, sizeof(threadstate->src));
+		memcpy(&threadstate->dst, &params.dst, sizeof(threadstate->dst));
+		memcpy(&threadstate->dst_port, &params.dst_port, sizeof(threadstate->dst_port));
 		threadstate->blastcount = params.blastcount;
 		threadstate->stopptr = &params.stop_blasting;
 		threadstate->bits = srcaddr_per_thread;
@@ -473,8 +465,7 @@ int main(int argc, char **argv)
 		threadstate->src.s6_addr[15] = (unsigned char)i;
 		threadstate->nr = i;
 
-		if (pthread_create(&threadstate->id, NULL, blaster_thread,
-				   threadstate)) {
+		if (pthread_create(&threadstate->id, NULL, blaster_thread, threadstate)) {
 			fatal("Thread %d/%d failed: %m\n", i, nr_threads);
 		}
 	}
@@ -483,12 +474,12 @@ int main(int argc, char **argv)
 
 	start = now_epoch_ms();
 	for (i = 0; i < nr_threads; i++) {
-		pthread_join(threadstates[i].id, (void **)&tmp);
+		pthread_join(threadstates[i].id, (void**)&tmp);
 		count += tmp;
 	}
 	finish = now_epoch_ms();
 
 	printf("Wrote %" PRIu64 " packets (%" PRIu64 " pkts/sec)\n", count,
-	       count / (finish - start) * 1000UL);
+			count / (finish - start) * 1000UL);
 	return 0;
 }
