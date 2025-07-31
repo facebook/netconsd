@@ -54,21 +54,4 @@ do { \
 	} \
 } while (0)
 
-#define log_once(...) \
-do { \
-	static int _t; \
-	if (__builtin_expect(!_t, 0)) { \
-		log(__VA_ARGS__); \
-		_t = -1; \
-	} \
-} while (0)
-
-#define log_every(n, ...) \
-do { \
-	static int _t = 1; \
-	if (!(_t % n), 0) \
-		log(__VA_ARGS__); \
-	_t++; \
-} while (0)
-
 #endif /* __LOG_H__ */
