@@ -54,7 +54,7 @@ $(liball): $(rlibobj) $(lib)
 %.s: %.c
 	$(CC) $< $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c -S -o $@
 
-$(lib):
+$(lib): ncrx/libncrx.c
 	$(MAKE) -e -C ncrx
 
 mods:
