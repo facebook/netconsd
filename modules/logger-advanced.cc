@@ -23,6 +23,9 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <atomic>
+#include <thread>
+#include <chrono>
 
 #include <re2/re2.h>
 
@@ -118,6 +121,15 @@ static std::unordered_map<struct in6_addr, struct logtarget> *maps;
 static std::vector<std::unique_ptr<RE2> > ignore_patterns;
 
 /*
+ * Statistics tracking variables
+ */
+static std::atomic<uint64_t> messages_received{ 0 };
+static std::atomic<uint64_t> messages_dropped{ 0 };
+static std::atomic<uint64_t> total_hosts_seen{ 0 };
+static std::atomic<bool> stats_thread_running{ false };
+static std::thread stats_thread;
+
+/*
  * Load regular expression patterns from netconsd-regexps.txt file
  */
 static void load_ignore_patterns(void)
@@ -201,14 +213,55 @@ static bool should_ignore_line(const char *line)
 }
 
 /*
+ * Statistics thread function that outputs statistics every minute
+ */
+static void stats_thread_func()
+{
+	auto last_time = std::chrono::steady_clock::now();
+	uint64_t last_received = 0;
+
+	while (stats_thread_running) {
+		std::this_thread::sleep_for(std::chrono::seconds(60));
+
+		if (!stats_thread_running) {
+			break;
+		}
+
+		auto current_time = std::chrono::steady_clock::now();
+		uint64_t current_received = messages_received.load();
+		uint64_t current_dropped = messages_dropped.load();
+		uint64_t current_hosts = total_hosts_seen.load();
+
+		// Calculate messages per second over the last minute
+		auto time_diff =
+			std::chrono::duration_cast<std::chrono::seconds>(
+				current_time - last_time)
+				.count();
+		uint64_t msg_diff = current_received - last_received;
+		double messages_per_second =
+			(time_diff > 0) ? (double)msg_diff / time_diff : 0.0;
+
+		fprintf(stderr,
+			"[STATS] Messages received: %lu, dropped: %lu, hosts seen: %lu, messages/sec: %.2f\n",
+			current_received, current_dropped, current_hosts,
+			messages_per_second);
+
+		last_time = current_time;
+		last_received = current_received;
+	}
+}
+
+/*
  * Return the existing logtarget struct if we've seen this host before; else,
  * initialize a new logtarget, insert it, and return that.
  */
 static struct logtarget &get_target(int thread_nr, struct in6_addr *src)
 {
 	auto itr = maps[thread_nr].find(*src);
-	if (itr == maps[thread_nr].end())
+	if (itr == maps[thread_nr].end()) {
+		total_hosts_seen++;
 		return maps[thread_nr].emplace(*src, src).first->second;
+	}
 
 	return itr->second;
 }
@@ -232,6 +285,7 @@ static void write_log(struct logtarget &tgt, struct msg_buf *buf,
 
 	/* Check if this line should be ignored */
 	if (should_ignore_line(log_text)) {
+		messages_dropped++;
 		return;
 	}
 
@@ -263,11 +317,22 @@ extern "C" int netconsd_output_init(int nr)
 {
 	maps = new std::unordered_map<struct in6_addr, struct logtarget>[nr];
 	load_ignore_patterns();
+
+	// Start the statistics thread
+	stats_thread_running = true;
+	stats_thread = std::thread(stats_thread_func);
+
 	return 0;
 }
 
 extern "C" void netconsd_output_exit(void)
 {
+	// Stop the statistics thread
+	stats_thread_running = false;
+	if (stats_thread.joinable()) {
+		stats_thread.join();
+	}
+
 	delete[] maps;
 }
 
@@ -278,6 +343,7 @@ extern "C" void netconsd_output_handler(int t, struct in6_addr *src,
 					struct msg_buf *buf,
 					struct ncrx_msg *msg)
 {
+	messages_received++;
 	struct logtarget &cur = get_target(t, src);
 	write_log(cur, buf, msg);
 }
