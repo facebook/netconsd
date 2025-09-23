@@ -1,4 +1,4 @@
-/* logger.cc: Very simple example C++ netconsd module
+/* advanced-logger.cc: Advanced C++ netconsd module with regex filtering
  *
  * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
@@ -11,9 +11,11 @@
 #include <cstdlib>
 #include <cstring>
 #include <functional>
+#include <memory>
 #include <unordered_map>
 #include <inttypes.h>
-
+#include <fstream>
+#include <string>
 #include <fcntl.h>
 #include <netdb.h>
 #include <sys/types.h>
@@ -21,6 +23,8 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+
+#include <re2/re2.h>
 
 #include <msgbuf-struct.h>
 #include <ncrx-struct.h>
@@ -109,6 +113,94 @@ struct logtarget {
 static std::unordered_map<struct in6_addr, struct logtarget> *maps;
 
 /*
+ * Vector to store compiled RE2 regex patterns from netconsd-regexps.txt
+ */
+static std::vector<std::unique_ptr<RE2> > ignore_patterns;
+
+/*
+ * Load regular expression patterns from netconsd-regexps.txt file
+ */
+static void load_ignore_patterns(void)
+{
+	std::ifstream file("/etc/netconsd/netconsd-regexps.txt");
+	std::string line;
+	bool in_ignore_section = false;
+
+	ignore_patterns.clear();
+
+	if (!file.is_open()) {
+		fprintf(stderr,
+			"Warning: Could not open netconsd-regexps.txt, no filtering will be applied\n");
+		return;
+	}
+
+	while (std::getline(file, line)) {
+		// Skip empty lines and comments (lines starting with #)
+		if (line.empty() || line[0] == '#') {
+			continue;
+		}
+
+		// Check for ignore section header
+		if (line == "ignore:") {
+			in_ignore_section = true;
+			continue;
+		}
+
+		// Check if we're leaving the ignore section (new section or non-indented line)
+		if (in_ignore_section && !line.empty() && line[0] != ' ' &&
+		    line[0] != '\t' && line[0] != '-') {
+			in_ignore_section = false;
+		}
+
+		// Process ignore patterns (lines starting with "  - " or "- ")
+		if (in_ignore_section && (line.substr(0, 4) == "  - " ||
+					  line.substr(0, 2) == "- ")) {
+			std::string pattern;
+			if (line.substr(0, 4) == "  - ") {
+				pattern = line.substr(4);
+			} else {
+				pattern = line.substr(2);
+			}
+
+			// Compile the regular expression
+			auto regex = std::make_unique<RE2>(pattern);
+			if (!regex->ok()) {
+				fprintf(stderr,
+					"Warning: Invalid regex pattern '%s': %s\n",
+					pattern.c_str(),
+					regex->error().c_str());
+				continue;
+			}
+
+			ignore_patterns.push_back(std::move(regex));
+		}
+	}
+
+	file.close();
+	fprintf(stderr,
+		"Loaded %zu ignore patterns from netconsd-regexps.txt\n",
+		ignore_patterns.size());
+}
+
+/*
+ * Check if a log line should be ignored based on loaded regex patterns
+ */
+static bool should_ignore_line(const char *line)
+{
+	if (ignore_patterns.empty()) {
+		return false;
+	}
+
+	for (const auto &pattern : ignore_patterns) {
+		if (RE2::PartialMatch(line, *pattern)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/*
  * Return the existing logtarget struct if we've seen this host before; else,
  * initialize a new logtarget, insert it, and return that.
  */
@@ -127,7 +219,23 @@ static struct logtarget &get_target(int thread_nr, struct in6_addr *src)
 static void write_log(struct logtarget &tgt, struct msg_buf *buf,
 		      struct ncrx_msg *msg)
 {
-	/* legacy non-extended netcons message */
+	const char *log_text;
+
+	/* Determine the log text to check against ignore patterns */
+	if (!msg) {
+		/* legacy non-extended netcons message */
+		log_text = buf->buf;
+	} else {
+		/* extended netcons msg with metadata - check the actual message text */
+		log_text = msg->text;
+	}
+
+	/* Check if this line should be ignored */
+	if (should_ignore_line(log_text)) {
+		return;
+	}
+
+	/* Write the log line if it's not ignored */
 	if (!msg) {
 		dprintf(tgt.fd, "%s\n", buf->buf);
 		return;
@@ -154,6 +262,7 @@ static void write_log(struct logtarget &tgt, struct msg_buf *buf,
 extern "C" int netconsd_output_init(int nr)
 {
 	maps = new std::unordered_map<struct in6_addr, struct logtarget>[nr];
+	load_ignore_patterns();
 	return 0;
 }
 

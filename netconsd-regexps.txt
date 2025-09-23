@@ -1,0 +1,19 @@
+# netconsd-regexps.txt - Configuration file for netconsd logger module
+# This file uses YAML-style sections to organize regular expressions
+# Lines starting with # are comments and will be ignored
+# Empty lines are also ignored
+
+# Examples of regular expressions:
+# .*error.*           - matches any line containing "error" (case sensitive)
+# (?i).*warning.*     - matches any line containing "warning" (case insensitive)
+# ^DEBUG:             - matches lines starting with "DEBUG:"
+# \d{4}-\d{2}-\d{2}   - matches date patterns like "2023-12-25"
+# kernel:.*oops       - matches lines containing "kernel:" followed by "oops"
+# (failed|error|panic) - matches lines containing "failed", "error", or "panic"
+
+# netcons messages that match these regexps are just dropped.
+# Useful for suppressing noisy repetitive messages.
+ignore:
+  - (?i).*debug.*
+  - \[\s*\d+\.\d+\].*usb.*disconnect
+  - kernel:.*audit.*
