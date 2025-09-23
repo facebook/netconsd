@@ -25,7 +25,7 @@ do { \
 #define fatal(...) \
 do { \
 	__log("FATAL: ", __VA_ARGS__); \
-	abort(); \
+	exit(EXIT_FAILURE); \
 } while (0)
 
 #define warn(...) \
