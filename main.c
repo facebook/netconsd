@@ -61,14 +61,16 @@ static void parse_arguments(int argc, char **argv, struct netconsd_params *p)
 			break;
 		case 'g':
 			tmp = index(optarg, '/');
-			if (!tmp)
+			if (!tmp) {
 				fatal("'-g' expects 'INTERVAL/AGE' in ms\n");
+			}
 
 			p->gc_int_ms = atoi(optarg);
 			p->gc_age_ms = atoi(tmp + 1);
 
-			if (p->gc_age_ms < p->gc_int_ms)
+			if (p->gc_age_ms < p->gc_int_ms) {
 				fatal("GC age must be >= GC interval\n");
+			}
 
 			break;
 		case -1:
@@ -90,15 +92,19 @@ done:
 	/*
 	 * Register output modules
 	 */
-	if (optind == argc)
+	if (optind == argc) {
 		warn("You passed no output modules, which is sort of silly\n");
+	}
 
-	if (argc - optind > MAXOUTS)
+	if (argc - optind > MAXOUTS) {
 		fatal("Too many output mods: %d>%d\n", argc - optind, MAXOUTS);
+	}
 
-	for (i = optind; i < argc; i++)
-		if (register_output_module(argv[i], p->nr_workers))
+	for (i = optind; i < argc; i++) {
+		if (register_output_module(argv[i], p->nr_workers)) {
 			fatal("Can't register '%s'\n", argv[i]);
+		}
+	}
 }
 
 /*

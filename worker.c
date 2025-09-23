@@ -115,8 +115,9 @@ static uint64_t ms_from_timespec(struct timespec *t)
 static void maybe_update_wake(struct ncrx_worker *cur, uint64_t when)
 {
 	uint64_t curwake = ms_from_timespec(&cur->wake);
-	if ((int64_t)curwake >= 0LL && curwake <= when)
+	if ((int64_t)curwake >= 0LL && curwake <= when) {
 		return;
+	}
 
 	cur->wake.tv_sec = when / 1000LL;
 	cur->wake.tv_nsec = (when % 1000LL) * 1000000L;
@@ -128,8 +129,9 @@ static const struct timespec end_of_time = {
 
 static const struct timespec *next_waketime(struct ncrx_worker *cur)
 {
-	if (cur->wake.tv_sec == -1)
+	if (cur->wake.tv_sec == -1) {
 		return &end_of_time;
+	}
 
 	return &cur->wake;
 }
@@ -178,8 +180,9 @@ static void timerlist_del(struct timerlist *node)
  */
 static uint64_t timerlist_peek(struct timerlist *list)
 {
-	if (timerlist_empty(list))
+	if (timerlist_empty(list)) {
 		return 0;
+	}
 
 	return list->prev->when;
 }
@@ -194,11 +197,13 @@ static struct timerlist *create_timerlists(void)
 	int i;
 
 	ret = calloc(NETCONS_RTO, sizeof(*ret));
-	if (!ret)
+	if (!ret) {
 		fatal("Unable to allocate timerlist\n");
+	}
 
-	for (i = 0; i < NETCONS_RTO; i++)
+	for (i = 0; i < NETCONS_RTO; i++) {
 		timerlist_init(&ret[i]);
+	}
 
 	return ret;
 }
@@ -215,13 +220,15 @@ static struct hashtable *create_hashtable(int order, struct hashtable *old)
 	unsigned long i;
 
 	new = zalloc(sizeof(*new) + sizeof(struct bucket) * (1UL << order));
-	if (!new)
+	if (!new) {
 		fatal("Unable to allocate hashtable\n");
+	}
 
 	new->order = order;
 
-	if (!old)
+	if (!old) {
 		return new;
+	}
 
 	for (i = 0; i < (1UL << old->order); i++) {
 		if (old->table[i].ncrx) {
@@ -252,9 +259,11 @@ static void destroy_hashtable(struct hashtable *ht)
 {
 	unsigned long i;
 
-	for (i = 0; i < (1UL << ht->order); i++)
-		if (ht->table[i].ncrx)
+	for (i = 0; i < (1UL << ht->order); i++) {
+		if (ht->table[i].ncrx) {
 			ncrx_destroy(ht->table[i].ncrx);
+		}
+	}
 
 	free(ht);
 }
@@ -263,8 +272,9 @@ static void maybe_resize_hashtable(struct ncrx_worker *cur, unsigned long new)
 {
 	unsigned long neworder;
 
-	if ((cur->ht->load + new) >> (cur->ht->order - 2) < 3)
+	if ((cur->ht->load + new) >> (cur->ht->order - 2) < 3) {
 		return;
+	}
 
 	/*
 	 * The hashtable is more than 75% full. Resize it such that it can take
@@ -281,8 +291,9 @@ static void hdelete(struct hashtable *h, struct bucket *victim)
 
 	fatal_on(!victim->ncrx, "Attempt to delete free bucket\n");
 
-	if (!timerlist_empty(&victim->timernode))
+	if (!timerlist_empty(&victim->timernode)) {
 		timerlist_del(&victim->timernode);
+	}
 
 	h->load--;
 	ncrx_destroy(victim->ncrx);
@@ -350,8 +361,9 @@ static void maybe_garbage_collect(struct ncrx_worker *cur)
 {
 	uint64_t nowgc;
 
-	if (!cur->gc_int_ms)
+	if (!cur->gc_int_ms) {
 		return;
+	}
 
 	nowgc = now_mono_ms() / cur->gc_int_ms;
 	if (nowgc > cur->lastgc) {
@@ -371,8 +383,9 @@ static void schedule_ncrx_callback(struct ncrx_worker *cur, struct bucket *bkt,
 		 * No callback needed. If we had one we no longer need it, so
 		 * just remove ourselves from the timerlist.
 		 */
-		if (!timerlist_empty(&bkt->timernode))
+		if (!timerlist_empty(&bkt->timernode)) {
 			timerlist_del(&bkt->timernode);
+		}
 
 		return;
 	}
@@ -391,8 +404,9 @@ static void schedule_ncrx_callback(struct ncrx_worker *cur, struct bucket *bkt,
 	 * callback needs to happen earlier than the one currently queued.
 	 */
 	if (!timerlist_empty(&bkt->timernode)) {
-		if (when > bkt->timernode.when)
+		if (when > bkt->timernode.when) {
 			return;
+		}
 
 		timerlist_del(&bkt->timernode);
 	}
@@ -434,8 +448,9 @@ static void do_ncrx_callbacks(struct ncrx_worker *cur, struct timerlist *list)
 	struct bucket *bkt;
 
 	timerlist_for_each(tnode, tmp, list) {
-		if (tnode->when > now)
+		if (tnode->when > now) {
 			break;
+		}
 
 		/*
 		 * Remove the bucket from the list first, since it might end up
@@ -457,8 +472,9 @@ static uint64_t run_ncrx_callbacks(struct ncrx_worker *cur, uint64_t lastrun)
 {
 	uint64_t i, now = now_mono_ms();
 
-	if (now == lastrun)
+	if (now == lastrun) {
 		goto out;
+	}
 
 	fatal_on(now < lastrun, "Time went backwards\n");
 
@@ -467,8 +483,9 @@ static uint64_t run_ncrx_callbacks(struct ncrx_worker *cur, uint64_t lastrun)
 	 * entire wheel and drain each list until we hit a callback after now.
 	 * Otherwise, we only iterate over the buckets that lie on [last,now].
 	 */
-	for (i = max(lastrun, now - NETCONS_RTO + 1); i <= now; i++)
+	for (i = max(lastrun, now - NETCONS_RTO + 1); i <= now; i++) {
 		do_ncrx_callbacks(cur, &cur->tlist[i % NETCONS_RTO]);
+	}
 
 out:
 	return now;
@@ -549,8 +566,9 @@ morework:
 		}
 
 		pthread_mutex_lock(&cur->queuelock);
-		if (cur->queue_head)
+		if (cur->queue_head) {
 			goto morework;
+		}
 	}
 
 	assert_pthread_mutex_locked(&cur->queuelock);
