@@ -10,8 +10,6 @@
 #include <dlfcn.h>
 #include <netinet/in.h>
 
-#include <ncrx.h>
-
 #include "include/common.h"
 #include "include/msgbuf-struct.h"
 #include "include/output.h"
