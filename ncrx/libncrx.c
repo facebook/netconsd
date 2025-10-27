@@ -86,7 +86,7 @@ static const struct ncrx_param ncrx_dfl_param = {
 		_max1 > _max2 ? _max1 : _max2; \
 	})
 
-#define offsetof(TYPE, MEMBER) ((size_t) & ((TYPE *)0)->MEMBER)
+#define offsetof(TYPE, MEMBER) ((size_t)&((TYPE *)0)->MEMBER)
 
 #define container_of(ptr, type, member)                            \
 	({                                                         \
