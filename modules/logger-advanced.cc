@@ -221,10 +221,9 @@ static void stats_thread_func()
 	uint64_t last_received = 0;
 
 	while (stats_thread_running) {
-		std::this_thread::sleep_for(std::chrono::seconds(60));
-
-		if (!stats_thread_running) {
-			break;
+		// Sleep in 1-second intervals to allow quick shutdown
+		for (int i = 0; i < 60 && stats_thread_running; ++i) {
+			std::this_thread::sleep_for(std::chrono::seconds(1));
 		}
 
 		auto current_time = std::chrono::steady_clock::now();
