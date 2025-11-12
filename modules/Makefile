@@ -4,7 +4,7 @@ CPPFLAGS ?=
 LDFLAGS ?=
 
 override CFLAGS += -fPIC
-override CXXFLAGS += -std=c++14 -fPIC
+override CXXFLAGS += -std=c++17 -fPIC
 override LDFLAGS += -shared
 INCLUDES = -I../ncrx -I../include
 

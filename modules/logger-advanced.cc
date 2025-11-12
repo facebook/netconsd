@@ -12,7 +12,10 @@
 #include <cstring>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <unordered_map>
+#include <unordered_set>
+#include <vector>
 #include <inttypes.h>
 #include <fstream>
 #include <string>
@@ -114,6 +117,11 @@ struct logtarget {
  * This relates the IP address of the remote host to its logtarget struct.
  */
 static std::unordered_map<struct in6_addr, struct logtarget> *maps;
+
+/*
+ * Track which hosts we've seen.
+ */
+static std::vector<std::unordered_set<struct in6_addr> > seen_hosts;
 
 /*
  * Vector to store compiled RE2 regex patterns from netconsd-regexps.txt
@@ -251,18 +259,35 @@ static void stats_thread_func()
 }
 
 /*
- * Return the existing logtarget struct if we've seen this host before; else,
- * initialize a new logtarget, insert it, and return that.
+ * Return the existing logtarget struct if we've seen this host before and the
+ * message should not be ignored; else, initialize a new logtarget, insert it,
+ * and return that. Returns std::nullopt if the message should be ignored.
  */
-static struct logtarget &get_target(int thread_nr, struct in6_addr *src)
+static std::optional<std::reference_wrapper<logtarget> >
+get_target(int thread_nr, struct in6_addr *src, const char *log_text)
 {
-	auto itr = maps[thread_nr].find(*src);
-	if (itr == maps[thread_nr].end()) {
+	// Track if this is a new host
+	std::unordered_set<struct in6_addr> &host_set = seen_hosts[thread_nr];
+	std::pair<std::unordered_set<struct in6_addr>::iterator, bool>
+		seen_result = host_set.insert(*src);
+	if (seen_result.second) {
+		// Successfully inserted a new host, increment counter
 		total_hosts_seen++;
-		return maps[thread_nr].emplace(*src, src).first->second;
 	}
 
-	return itr->second;
+	// Check if message should be filtered
+	if (should_ignore_line(log_text)) {
+		messages_dropped++;
+		return std::nullopt;
+	}
+
+	// Only create logtarget (and file) if we pass the filter
+	auto itr = maps[thread_nr].find(*src);
+	if (itr == maps[thread_nr].end()) {
+		itr = maps[thread_nr].emplace(*src, src).first;
+	}
+
+	return std::ref(itr->second);
 }
 
 /*
@@ -271,25 +296,8 @@ static struct logtarget &get_target(int thread_nr, struct in6_addr *src)
 static void write_log(struct logtarget &tgt, struct msg_buf *buf,
 		      struct ncrx_msg *msg)
 {
-	const char *log_text;
-
-	/* Determine the log text to check against ignore patterns */
 	if (!msg) {
-		/* legacy non-extended netcons message */
-		log_text = buf->buf;
-	} else {
-		/* extended netcons msg with metadata - check the actual message text */
-		log_text = msg->text;
-	}
-
-	/* Check if this line should be ignored */
-	if (should_ignore_line(log_text)) {
-		messages_dropped++;
-		return;
-	}
-
-	/* Write the log line if it's not ignored */
-	if (!msg) {
+		/* Legacy style netcons msg */
 		dprintf(tgt.fd, "%s\n", buf->buf);
 		return;
 	}
@@ -315,6 +323,7 @@ static void write_log(struct logtarget &tgt, struct msg_buf *buf,
 extern "C" int netconsd_output_init(int nr)
 {
 	maps = new std::unordered_map<struct in6_addr, struct logtarget>[nr];
+	seen_hosts.resize(nr);
 	load_ignore_patterns();
 
 	// Start the statistics thread
@@ -333,6 +342,7 @@ extern "C" void netconsd_output_exit(void)
 	}
 
 	delete[] maps;
+	seen_hosts.clear();
 }
 
 /*
@@ -342,7 +352,12 @@ extern "C" void netconsd_output_handler(int t, struct in6_addr *src,
 					struct msg_buf *buf,
 					struct ncrx_msg *msg)
 {
+	const char *log_text = msg ? msg->text : buf->buf;
 	messages_received++;
-	struct logtarget &cur = get_target(t, src);
-	write_log(cur, buf, msg);
+
+	/* get_target checks filtering and returns std::nullopt if message should be ignored */
+	auto target = get_target(t, src, log_text);
+	if (target.has_value()) {
+		write_log(target.value(), buf, msg);
+	}
 }
