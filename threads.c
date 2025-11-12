@@ -34,10 +34,11 @@ static void wake_thread(struct ncrx_listener *listener, int worker)
 	pthread_cond_signal(&tgt->cond);
 }
 
-static void push_prequeue_to_worker(struct ncrx_listener *listener, int worker)
+static void push_prequeue_to_worker(struct ncrx_listener *listener,
+				    int worker_nr)
 {
-	struct ncrx_worker *tgt = &listener->workers[worker];
-	struct ncrx_prequeue *prequeue = &listener->prequeues[worker];
+	struct ncrx_worker *tgt = &listener->workers[worker_nr];
+	struct ncrx_prequeue *prequeue = &listener->prequeues[worker_nr];
 
 	assert_pthread_mutex_locked(&tgt->queuelock);
 
@@ -51,8 +52,7 @@ static void push_prequeue_to_worker(struct ncrx_listener *listener, int worker)
 	prequeue->queue_head = NULL;
 
 	debug("Listener %d pushed %d pkts to worker %d (backlog: %d)\n",
-	      listener->thread_nr, prequeue->count, worker->thread_nr,
-	      tgt->nr_queued);
+	      listener->thread_nr, prequeue->count, worker_nr, tgt->nr_queued);
 
 	tgt->nr_queued += prequeue->count;
 	prequeue->count = 0;
