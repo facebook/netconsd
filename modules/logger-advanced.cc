@@ -31,6 +31,7 @@
 #include <chrono>
 
 #include <re2/re2.h>
+#include <re2/set.h>
 
 #include <msgbuf-struct.h>
 #include <ncrx-struct.h>
@@ -124,9 +125,10 @@ static std::unordered_map<struct in6_addr, struct logtarget> *maps;
 static std::vector<std::unordered_set<struct in6_addr> > seen_hosts;
 
 /*
- * Vector to store compiled RE2 regex patterns from netconsd-regexps.txt
+ * RE2::Set to store compiled regex patterns from netconsd-regexps.txt
+ * Using RE2::Set for efficient parallel matching of multiple patterns
  */
-static std::vector<std::unique_ptr<RE2> > ignore_patterns;
+static std::shared_ptr<re2::RE2::Set> ignore_patterns;
 
 /*
  * Statistics tracking variables
@@ -146,13 +148,19 @@ static void load_ignore_patterns(void)
 	std::string line;
 	bool in_ignore_section = false;
 
-	ignore_patterns.clear();
+	ignore_patterns.reset();
 
 	if (!file.is_open()) {
 		fprintf(stderr,
 			"Warning: Could not open netconsd-regexps.txt, no filtering will be applied\n");
 		return;
 	}
+
+	// Build RE2::Set for all ignore patterns
+	auto regex_set = std::make_shared<re2::RE2::Set>(
+		re2::RE2::DefaultOptions, re2::RE2::UNANCHORED);
+
+	int valid_pattern_count = 0;
 
 	while (std::getline(file, line)) {
 		// Skip empty lines and comments (lines starting with #)
@@ -182,24 +190,31 @@ static void load_ignore_patterns(void)
 				pattern = line.substr(2);
 			}
 
-			// Compile the regular expression
-			auto regex = std::make_unique<RE2>(pattern);
-			if (!regex->ok()) {
+			// Add pattern to RE2::Set
+			std::string error;
+			if (regex_set->Add(pattern, &error) >= 0) {
+				valid_pattern_count++;
+			} else {
 				fprintf(stderr,
 					"Warning: Invalid regex pattern '%s': %s\n",
-					pattern.c_str(),
-					regex->error().c_str());
-				continue;
+					pattern.c_str(), error.c_str());
 			}
-
-			ignore_patterns.push_back(std::move(regex));
 		}
 	}
 
 	file.close();
-	fprintf(stderr,
-		"Loaded %zu ignore patterns from netconsd-regexps.txt\n",
-		ignore_patterns.size());
+
+	// Only compile and update if we have valid patterns
+	if (valid_pattern_count > 0) {
+		if (regex_set->Compile()) {
+			ignore_patterns = std::move(regex_set);
+			fprintf(stderr,
+				"Loaded %d ignore patterns from netconsd-regexps.txt\n",
+				valid_pattern_count);
+		} else {
+			fprintf(stderr, "Error: Failed to compile RE2::Set\n");
+		}
+	}
 }
 
 /*
@@ -207,17 +222,12 @@ static void load_ignore_patterns(void)
  */
 static bool should_ignore_line(const char *line)
 {
-	if (ignore_patterns.empty()) {
+	if (!ignore_patterns) {
 		return false;
 	}
 
-	for (const auto &pattern : ignore_patterns) {
-		if (RE2::PartialMatch(line, *pattern)) {
-			return true;
-		}
-	}
-
-	return false;
+	// RE2::Set::Match tests against all patterns in a single pass
+	return ignore_patterns->Match(line, nullptr);
 }
 
 /*
