@@ -20,10 +20,38 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+
+    - name: Install RE2 headers
+      run: |
+        set -euo pipefail
+
+        if [ -f /etc/os-release ]; then
+          . /etc/os-release
+        fi
+
+        case "${ID:-}" in
+          ubuntu|debian)
+            echo "Debian/Ubuntu: installing libre2-dev"
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends libre2-dev
+            ;;
+          fedora|centos|rhel|rocky|almalinux|amzn)
+            echo "RHEL/CentOS/Fedora-family: installing libre2-devel with dnf"
+            sudo dnf install -y epel-release || true
+            sudo dnf install -y libre2-devel
+            ;;
+          *)
+            echo "Unsupported/unknown Linux distribution ($ID). Aborting without fallback."
+            exit 1
+            ;;
+        esac
+
     - name: Build netconsd
       run: make
+
     - name: Build netconsblaster
       run: make -C util
+
   markdown:
     name: Markdown
     runs-on: ubuntu-latest
