@@ -36,9 +36,9 @@ jobs:
             sudo apt-get install -y --no-install-recommends libre2-dev
             ;;
           fedora|centos|rhel|rocky|almalinux|amzn)
-            echo "RHEL/CentOS/Fedora-family: installing libre2-devel with dnf"
+            echo "RHEL/CentOS/Fedora-family: installing re2-devel with dnf"
             sudo dnf install -y epel-release || true
-            sudo dnf install -y libre2-devel
+            sudo dnf install -y re2-devel
             ;;
           *)
             echo "Unsupported/unknown Linux distribution ($ID). Aborting without fallback."
