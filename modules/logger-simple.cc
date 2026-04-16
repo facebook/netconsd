@@ -85,13 +85,17 @@ struct logtarget {
 			}
 		}
 
-		ret = open(hostname, O_TRUNC | O_WRONLY | O_CREAT, 0644);
+		ret = open(hostname, O_WRONLY | O_CREAT, 0644);
 		if (ret == -1) {
 			fprintf(stderr, "FATAL: open() failed: %m\n");
-			abort();
+			exit(EXIT_FAILURE);
 		}
 
 		fd = ret;
+		if (lseek(fd, 0, SEEK_END) == -1) {
+			fprintf(stderr, "FATAL: lseek(SEEK_END) failed: %m\n");
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	/*
